@@ -18,6 +18,7 @@ from matplotlib.widgets import Slider
 from skimage.external import tifffile as ski
 
 import spincam
+import ledserial
 
 # Camera Properties Min/Max
 __FPS_MIN = 1
@@ -33,6 +34,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
+__COM_PORT=3
 
 
 def __find_and_init_cam(_=None):
@@ -56,15 +58,11 @@ def __find_and_init_cam(_=None):
 	spincam.disable_auto_frame()
 	__init_gain(0)
 	spincam.set_video_mode('7')
+	ledserial.connect(__COM_PORT)
 	
 def __choose_directory(_=None):
     dir = filedialog.askdirectory()
     __GUI_DICT['directory_text'].set_val(dir)
-	
-def __connect_LEDs():
-    s = serial.Serial('COM7')
-    res = s.read()
-    print(res)
 	
 def __start_stream(_=None):
     # Starts stream of cameras
@@ -368,6 +366,18 @@ def __exposure_text(_=None):
     exposure=max(__EXPOSURE_MIN,exposure)
     spincam.set_exposure(exposure)
 
+def __ledr(_=None):
+	ledserial.send('r')
+	
+def __ledg(_=None):
+	ledserial.send('g')
+	
+def __ledb(_=None):
+	ledserial.send('b')
+	
+def __ledy(_=None):
+	ledserial.send('y')
+	
 def __stage_controls(fig, pos, options_height, padding):
     # Creates stage controls
     but_width=options_height*2
@@ -588,7 +598,62 @@ def __save_images(save_type):
 #    print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
 #          ('double' if event.dblclick else 'single', event.button,
 #           event.x, event.y, event.xdata, event.ydata))
-		
+
+def __save_fourcolor(save_type):
+   
+    global __IMSHOW_DICT 
+    global __HIST_DICT
+    if not __STREAM:
+        raise RuntimeError('Stream has not been started yet! Please start it first.')
+
+    #set LED number	and array
+    lednumber=4
+    color=['r','y','g','b']	
+	
+    # Get name format, counter, and number of images
+    name_format = __GUI_DICT['name_format_text'].text
+    counter = int(__GUI_DICT['counter_text'].text)
+    num_images = int(__GUI_DICT['num_images_text'].text)
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    frmrate=int(spincam.get_frame_rate())
+    directory = __GUI_DICT['directory_text'].text
+    counter = 0
+    file_number = 1
+
+	
+    if (time_btwn_frames != 0):
+        num_to_avg = int( frmrate * time_btwn_frames) 
+	
+	
+    img_name = name_format.replace('{date}',str(datetime.date.today()))
+	
+    if directory:
+	    directory = directory + '\\'
+	
+    img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
+	
+	
+    img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
+    print('Experiment start: ' + str(datetime.datetime.now()))
+	
+    for i in range(num_images):
+        ledserial.send(color[i%lednumber])
+        img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
+        image_dict = spincam.get_image_and_avg(num_to_avg)
+        
+        # Make sure images are complete
+        if 'data' in image_dict:
+        # Save image
+            #print('Acquired: ' + img_name)
+            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+            counter=counter+1
+            if (counter/lednumber == 10 ):
+                file_number = file_number + 1
+                counter=0
+    print('Finished Acquiring ' + img_name)
+
+	
 def __spincam_gui():
 
     # Get figure
@@ -639,10 +704,10 @@ def __spincam_gui():
 
     stage_dict['z_acquire_but'].on_clicked(__test)
 	
-    stage_dict['red_but'].on_clicked(__test)
-    stage_dict['yellow_but'].on_clicked(__test)
-    stage_dict['blue_but'].on_clicked(__test)
-    stage_dict['green_but'].on_clicked(__test)
+    stage_dict['red_but'].on_clicked(__ledr)
+    stage_dict['yellow_but'].on_clicked(__ledy)
+    stage_dict['blue_but'].on_clicked(__ledb)
+    stage_dict['green_but'].on_clicked(__ledg)
 	
     stage_dict['xy_step_text'].on_submit(__test)
     stage_dict['z_step_text'].on_submit(__test)
@@ -747,7 +812,7 @@ def __spincam_gui():
     save_button = Button(save_button_axes, 'Start Acquisition')
     save_button.label.set_fontsize(7)
     # Set callback
-    save_button.on_clicked(__save_images)
+    save_button.on_clicked(__save_fourcolor)
 	
 	# Set num images text
     num_images_text_pos = [cam_plot_width-20*padding,
