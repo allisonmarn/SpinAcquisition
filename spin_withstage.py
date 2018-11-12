@@ -36,6 +36,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
+__COM_PORT=3
 
 __STEP_MIN = 0
 __STEP_MAX = 5000
@@ -45,6 +46,7 @@ __COM_PORT = 5
 
 
 def __find_and_init_cam(_=None):
+<<<<<<< HEAD
     # Finds and initializes camera
     global __EXPOSURE_MAX
     global __EXPOSURE_MIN
@@ -78,6 +80,34 @@ def __connect_LEDs():
     """
 
 
+=======
+	# Finds and initializes camera
+	global __EXPOSURE_MAX
+	global __EXPOSURE_MIN
+	global __FPS_MAX
+	global __FPS_MIN
+
+	find_and_init_text = __GUI_DICT['display_dict']['find_and_init_text'].text
+	print('Connecting camera...')
+	spincam.find_cam(find_and_init_text)
+	
+	spincam.init_cam()
+	__EXPOSURE_MIN = spincam.get_exp_min()
+	__EXPOSURE_MAX = spincam.get_exp_max()
+	__FPS_MIN = spincam.get_fps_min()
+	__FPS_MAX = spincam.get_fps_max()
+	spincam.disable_auto_exp()
+	spincam.disable_auto_gain()
+	spincam.disable_auto_frame()
+	__init_gain(0)
+	spincam.set_video_mode('7')
+	ledserial.connect(__COM_PORT)
+	
+def __choose_directory(_=None):
+    dir = filedialog.askdirectory()
+    __GUI_DICT['directory_text'].set_val(dir)
+	
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
 def __start_stream(_=None):
     # Starts stream of cameras
     global __STREAM
@@ -532,7 +562,11 @@ def __ledb(_=None):
 	ledserial.send('b')
 	
 def __ledy(_=None):
+<<<<<<< HEAD
 	ledserial.send('c')
+=======
+	ledserial.send('y')
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
 	
 def __stage_controls(fig, pos, options_height, padding):
     # Creates stage controls
@@ -741,10 +775,70 @@ def __acquire_images():
 #    print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
 #          ('double' if event.dblclick else 'single', event.button,
 #           event.x, event.y, event.xdata, event.ydata))
+<<<<<<< HEAD
 def __save_images(file_name, data, time, z):
     file_name = file_name + '_time_%06d' % time + '_z_%03d' % z + '.tiff'
     ski.imsave(file_name, data, compress=0)
 
+=======
+
+def __save_fourcolor(save_type):
+   
+    global __IMSHOW_DICT 
+    global __HIST_DICT
+    if not __STREAM:
+        raise RuntimeError('Stream has not been started yet! Please start it first.')
+
+    #set LED number	and array
+    lednumber=4
+    color=['r','y','g','b']	
+	
+    # Get name format, counter, and number of images
+    name_format = __GUI_DICT['name_format_text'].text
+    counter = int(__GUI_DICT['counter_text'].text)
+    num_images = int(__GUI_DICT['num_images_text'].text)
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    frmrate=int(spincam.get_frame_rate())
+    directory = __GUI_DICT['directory_text'].text
+    counter = 0
+    file_number = 1
+
+	
+    if (time_btwn_frames != 0):
+        num_to_avg = int( frmrate * time_btwn_frames) 
+	
+	
+    img_name = name_format.replace('{date}',str(datetime.date.today()))
+	
+    if directory:
+	    directory = directory + '\\'
+	
+    img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
+	
+	
+    img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
+    print('Experiment start: ' + str(datetime.datetime.now()))
+	
+    for i in range(num_images):
+        ledserial.send(color[i%lednumber])
+        img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
+        image_dict = spincam.get_image_and_avg(num_to_avg)
+        
+        # Make sure images are complete
+        if 'data' in image_dict:
+        # Save image
+            #print('Acquired: ' + img_name)
+            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+            counter=counter+1
+            if (counter/lednumber == 10 ):
+                file_number = file_number + 1
+                counter=0
+    print('Finished Acquiring ' + img_name)
+
+	
+def __spincam_gui():
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
 
 def __spincam_gui():
     # Get figure
@@ -779,6 +873,7 @@ def __spincam_gui():
                  0.25,
                  cam_plot_height]
 
+<<<<<<< HEAD
     stage_dict = __stage_controls(fig,
                                   stage_pos,
                                   options_height,
@@ -794,16 +889,31 @@ def __spincam_gui():
 
     stage_dict['z_acquire_but'].on_clicked(__defocus_acquisition)
 
+=======
+    stage_dict['z_acquire_but'].on_clicked(__test)
+	
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
     stage_dict['red_but'].on_clicked(__ledr)
     stage_dict['yellow_but'].on_clicked(__ledy)
     stage_dict['blue_but'].on_clicked(__ledb)
     stage_dict['green_but'].on_clicked(__ledg)
+<<<<<<< HEAD
 
     stage_dict['xy_step_text'].on_submit(__xy_step)
     stage_dict['z_step_text'].on_submit(__z_step)
     stage_dict['step_num_text'].on_submit(__number_defocus)
 
     # Start stream
+=======
+	
+    stage_dict['xy_step_text'].on_submit(__test)
+    stage_dict['z_step_text'].on_submit(__test)
+    stage_dict['step_num_text'].on_submit(__test)
+    
+	
+									
+	# Start stream
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
     start_stream_button_pos = [padding,
                                display_pos[1] - options_height,
                                0.5 - 2 * padding,
@@ -901,6 +1011,7 @@ def __spincam_gui():
     save_button = Button(save_button_axes, 'Start Acquisition(no z-scan)')
     save_button.label.set_fontsize(7)
     # Set callback
+<<<<<<< HEAD
     save_button.on_clicked(__acquire_images)
 
     # Set num images text
@@ -908,6 +1019,15 @@ def __spincam_gui():
                            padding,
                            0.1 - 2 * padding,
                            options_height]
+=======
+    save_button.on_clicked(__save_fourcolor)
+	
+	# Set num images text
+    num_images_text_pos = [cam_plot_width-20*padding,
+                       padding,
+                       0.1-2*padding,
+                       options_height]
+>>>>>>> a68db96897855e8cb7e408779e8a3b414d25b524
     num_images_text_axes = fig.add_axes(num_images_text_pos)
     num_images_text = TextBox(num_images_text_axes, '# to Acquire')
     num_images_text.label.set_fontsize(7)
