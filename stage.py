@@ -29,6 +29,7 @@ def __initialize_stages():
     z_pos = 5
     
     # homing
+    print('Homing is started...')
     __cntrl_x.move_home()
     time.sleep(1)    # pause 5 to homing
     __cntrl_y.move_home()
@@ -36,8 +37,10 @@ def __initialize_stages():
     __cntrl_z.move_home()
     time.sleep(60)    # pause 5 to homing
     print('Homing is finished...')
-	
+
     # go to home positions
+
+    print('Going to default positions...')
     __cntrl_x.move_to(x_pos)
     time.sleep(1)
     __cntrl_y.move_to(y_pos)
@@ -65,6 +68,12 @@ def __go_z(position):
     # go to positions
     __cntrl_z.move_by(position*1e-3)
 
+def __check_objective():
+    var = input("Is objective mounted (Y/N): ")
+    if (var == 'Y'):
+        return True
+    else:
+        return False
 
 """ 
 import thorlabs_apt as apt
