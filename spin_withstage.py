@@ -7,7 +7,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 
 import numpy as np
-import stage
+#import stage
 import time
 # import cv2
 
@@ -36,6 +36,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
+__GUI_DICT2 = None
 __COM_PORT = 3
 
 __STEP_MIN = 0
@@ -570,8 +571,8 @@ def __ledb(_=None):
 def __ledy(_=None):
     ledserial.send('c')
 
-
-# ledserial.send('y')
+def __ledc(_=None):
+    ledserial.send('c')
 
 def __stage_controls(fig, pos, options_height, padding):
     # Creates stage controls
@@ -625,7 +626,7 @@ def __stage_controls(fig, pos, options_height, padding):
                        but_width,
                        but_height]
     z_up_button_axes = fig.add_axes(z_up_button_pos)
-    z_up_button = Button(z_up_button_axes, '+z')
+    z_up_button = Button(z_up_button_axes, '+ z')
     z_up_button.label.set_fontsize(7)
 
     z_down_button_pos = [z_up_button_pos[0],
@@ -633,7 +634,7 @@ def __stage_controls(fig, pos, options_height, padding):
                          but_width,
                          but_height]
     z_down_button_axes = fig.add_axes(z_down_button_pos)
-    z_down_button = Button(z_down_button_axes, '-z')
+    z_down_button = Button(z_down_button_axes, '- z')
     z_down_button.label.set_fontsize(7)
 
     # current position
@@ -836,11 +837,251 @@ def __save_fourcolor(save_type):
                 counter = 0
     print('Finished Acquiring ' + img_name)
 
+def __stage_gui():
+    fig2 = plt.figure(2)
+	
+    # Creates stage controls
+    options_height = 0.02
+    padding = 0.01
+    but_width = options_height * 2
+    but_height = options_height * 3
+	
+    pos = [0,0,1,1]
+	
+	
+
+    up_button_pos1 = [pos[0] + 0.125 - options_height,
+                     pos[1] + pos[3] - 2 * padding - but_height,
+                     but_width,
+                     but_height]
+    up_button_axes1 = fig2.add_axes(up_button_pos1)
+    up_button1 = Button(up_button_axes1, '++y')
+    up_button1.label.set_fontsize(7)
+    up_button1.on_clicked(__test)	
+	
+    up_button_pos2 = [pos[0] + 0.125 - options_height,
+                     up_button_pos1[1] - but_height,
+                     but_width,
+                     but_height]
+    up_button_axes2 = fig2.add_axes(up_button_pos2)
+    up_button2 = Button(up_button_axes2, '+y')
+    up_button2.label.set_fontsize(7)
+    up_button2.on_clicked(__test)
+
+    down_button_pos1 = [pos[0] + 0.125 - options_height,
+                       up_button_pos2[1] - 2 * but_height,
+                       but_width,
+                       but_height]
+    down_button_axes1 = fig2.add_axes(down_button_pos1)
+    down_button1 = Button(down_button_axes1, '-y')
+    down_button1.label.set_fontsize(7)
+    down_button1.on_clicked(__test)
+
+    down_button_pos2 = [pos[0] + 0.125 - options_height,
+                       down_button_pos1[1] - but_height,
+                       but_width,
+                       but_height]
+    down_button_axes2 = fig2.add_axes(down_button_pos2)
+    down_button2 = Button(down_button_axes2, '- -y')
+    down_button2.label.set_fontsize(7)
+    down_button2.on_clicked(__test)
+
+	
+    left_button_pos1 = [pos[0] + 0.125 - options_height - but_width,
+                       down_button_pos1[1] + but_height,
+                       but_width,
+                       but_height]
+    left_button_axes1 = fig2.add_axes(left_button_pos1)
+    left_button1 = Button(left_button_axes1, '-x')
+    left_button1.label.set_fontsize(7)
+    left_button1.on_clicked(__test)
+	
+    left_button_pos2 = [pos[0] + 0.125 - options_height - 2 * but_width,
+                       down_button_pos1[1] + but_height,
+                       but_width,
+                       but_height]
+    left_button_axes2 = fig2.add_axes(left_button_pos2)
+    left_button2 = Button(left_button_axes2, '- -x')
+    left_button2.label.set_fontsize(7)
+    left_button2.on_clicked(__test)
+
+    right_button_pos1 = [pos[0] + 0.125 - options_height + but_width,
+                        left_button_pos1[1],
+                        but_width,
+                        but_height]
+    right_button_axes1 = fig2.add_axes(right_button_pos1)
+    right_button1 = Button(right_button_axes1, '+x')
+    right_button1.label.set_fontsize(7)
+    right_button1.on_clicked(__test)
+
+    right_button_pos2 = [pos[0] + 0.125 - options_height + 2 * but_width,
+                        left_button_pos1[1],
+                        but_width,
+                        but_height]
+    right_button_axes2 = fig2.add_axes(right_button_pos2)
+    right_button2 = Button(right_button_axes2, '++x')
+    right_button2.label.set_fontsize(7)
+    left_button2.on_clicked(__test)
+	
+    # current position
+    x_pos_but_pos1 = [up_button_pos1[0] + 6 * padding,
+                       down_button_pos2[1] - 2 * padding - options_height * 2,
+                       0.1 - 2 * padding,
+                       options_height * 2]
+    x_pos_but_axes1 = fig2.add_axes(x_pos_but_pos1)
+    x_pos_but1 = TextBox(x_pos_but_axes1, 'current x pos.')
+    x_pos_but1.label.set_fontsize(7)
+    x_pos_but1.set_val(1)
+    x_pos_but1.on_submit(__test)	
+	
+    # current position
+    y_pos_but_pos1 = [up_button_pos1[0] + 6 * padding,
+                       x_pos_but_pos1[1] - 2 * padding - options_height * 2,
+                       0.1 - 2 * padding,
+                       options_height * 2]
+    y_pos_but_axes1 = fig2.add_axes(y_pos_but_pos1)
+    y_pos_but1 = TextBox(y_pos_but_axes1, 'current y pos.')
+    y_pos_but1.label.set_fontsize(7)
+    y_pos_but1.set_val(1)
+    y_pos_but1.on_submit(__test)
+
+    # Set x-y step size
+    xy_step_text_pos1 = [up_button_pos1[0] + 6 * padding,
+                        y_pos_but_pos1[1] - 2 * padding - options_height * 2,
+                        0.1 - 2 * padding,
+                        options_height * 2]
+    xy_step_text_axes1 = fig2.add_axes(xy_step_text_pos1)
+    xy_step_text1 = TextBox(xy_step_text_axes1, '+ xy step size (um)')
+    xy_step_text1.label.set_fontsize(7)
+    xy_step_text1.set_val(1)
+    xy_step_text1.on_submit(__test)
+	
+    # Set x-y step size
+    xy_step_text_pos2 = [up_button_pos1[0] + 6 * padding,
+                        xy_step_text_pos1[1] - 2 * padding - options_height * 2,
+                        0.1 - 2 * padding,
+                        options_height * 2]
+    xy_step_text_axes2 = fig2.add_axes(xy_step_text_pos2)
+    xy_step_text2 = TextBox(xy_step_text_axes2, '++ xy step size (um)')
+    xy_step_text2.label.set_fontsize(7)
+    xy_step_text2.set_val(1)
+    xy_step_text2.on_submit(__test)
+	
+    z_up_button_pos1 = [up_button_pos1[0] + 8 * but_width,
+                       up_button_pos1[1],
+                       but_width,
+                       but_height]
+    z_up_button_axes1 = fig2.add_axes(z_up_button_pos1)
+    z_up_button1 = Button(z_up_button_axes1, '++z')
+    z_up_button1.label.set_fontsize(7)
+    z_up_button1.on_clicked(__test)
+
+    z_up_button_pos2 = [z_up_button_pos1[0],
+                       up_button_pos2[1],
+                       but_width,
+                       but_height]
+    z_up_button_axes2 = fig2.add_axes(z_up_button_pos2)
+    z_up_button2 = Button(z_up_button_axes2, '+ z')
+    z_up_button2.label.set_fontsize(7)
+    z_up_button2.on_clicked(__test)
+
+    z_down_button_pos1 = [z_up_button_pos2[0],
+                         z_up_button_pos2[1] - 2 * but_height,
+                         but_width,
+                         but_height]
+    z_down_button_axes1 = fig2.add_axes(z_down_button_pos1)
+    z_down_button1 = Button(z_down_button_axes1, '- z')
+    z_down_button1.label.set_fontsize(7)
+    z_down_button1.on_clicked(__test)
+
+    z_down_button_pos2 = [z_up_button_pos2[0],
+                         z_down_button_pos1[1] - but_height,
+                         but_width,
+                         but_height]
+    z_down_button_axes2 = fig2.add_axes(z_down_button_pos2)
+    z_down_button2 = Button(z_down_button_axes2, '- - z')
+    z_down_button2.label.set_fontsize(7)
+    z_down_button2.on_clicked(__test)
+	
+    # current position
+    z_pos_but_pos1 = [z_down_button_pos2[0] + but_width * 2,
+                       z_down_button_pos2[1] - 2 * padding - options_height * 2,
+                       0.1 - 2 * padding,
+                       options_height * 2]
+    z_pos_but_axes1 = fig2.add_axes(z_pos_but_pos1)
+    z_pos_but1 = TextBox(z_pos_but_axes1, 'current z pos.')
+    z_pos_but1.label.set_fontsize(7)
+    z_pos_but1.set_val(1)
+    z_pos_but1.on_submit(__test)
+
+    # Set z step size
+    z_step_text_pos1 = [z_pos_but_pos1[0],
+                       z_pos_but_pos1[1] - 2 * padding - options_height * 2,
+                       0.1 - 2 * padding,
+                       options_height * 2]
+    z_step_text_axes1 = fig2.add_axes(z_step_text_pos1)
+    z_step_text1 = TextBox(z_step_text_axes1, '+ z step size (um)')
+    z_step_text1.label.set_fontsize(7)
+    z_step_text1.set_val(1)
+    z_step_text1.on_submit(__test)
+    # Set z step size
+    z_step_text_pos2 = [z_pos_but_pos1[0],
+                       z_step_text_pos1[1] - 2 * padding - options_height * 2,
+                       0.1 - 2 * padding,
+                       options_height * 2]
+    z_step_text_axes2 = fig2.add_axes(z_step_text_pos2)
+    z_step_text2 = TextBox(z_step_text_axes2, '++ z step size (um)')
+    z_step_text2.label.set_fontsize(7)
+    z_step_text2.set_val(1)
+    z_step_text2.on_submit(__test)
+	
+    # num of steps
+    step_num_text_pos1 = [z_pos_but_pos1[0],
+                         z_step_text_pos2[1] - 2 * padding - options_height * 2,
+                         0.1 - 2 * padding,
+                         options_height * 2]
+    step_num_text_axes1 = fig2.add_axes(step_num_text_pos1)
+    step_num_text1 = TextBox(step_num_text_axes1, '# of steps (radius)')
+    step_num_text1.label.set_fontsize(7)
+    step_num_text1.set_val(1)
+    step_num_text1.on_submit(__test)
+
+    # z interval
+    z_interval_text_pos1 = [z_pos_but_pos1[0],
+                           step_num_text_pos1[1] - 2 * padding - options_height * 2,
+                           0.1 - 2 * padding,
+                           options_height * 2]
+    z_interval_text_axes1 = fig2.add_axes(z_interval_text_pos1)
+    z_interval_text1 = TextBox(z_interval_text_axes1, 'defocus interval (um)')
+    z_interval_text1.label.set_fontsize(7)
+    z_interval_text1.set_val(1)
+    z_interval_text1.on_submit(__test)
+
+    return {'fig2': fig2,
+			'up_button1': up_button1,
+            'down_button1': down_button1,
+            'left_button1': left_button1,
+            'right_button1': right_button1,
+			'up_button2': up_button2,
+            'down_button2': down_button2,
+            'left_button2': left_button2,
+            'right_button2': right_button2,
+            'z_up_button1': z_up_button1,
+            'z_down_button1': z_down_button1,
+            'z_up_button2': z_up_button2,
+            'z_down_button2': z_down_button2,
+            'z_pos_but1':z_pos_but1,
+            'xy_step_text1': xy_step_text1,
+            'xy_step_text2': xy_step_text2,
+            'z_step_text1': z_step_text1,
+            'z_step_text2': z_step_text2,
+            'step_num_text1': step_num_text1,
+            'z_interval_text1': z_interval_text1}
 
 def __spincam_gui():
     # Get figure
-    fig = plt.figure()
-
+    fig = plt.figure(1)
+	
     # Set position params
     padding = 0.01
     options_height = 0.02
@@ -1034,6 +1275,7 @@ def __spincam_gui():
     avg_images_text = TextBox(avg_images_text_axes, '# to Avg')
     avg_images_text.label.set_fontsize(7)
     avg_images_text.set_val(10)
+	
 
     return {'fig': fig,
             'display_dict': display_dict,
@@ -1088,14 +1330,15 @@ def main():
     global __GUI_DICT
 
     # check microscope objective
-    while(stage.__check_objective()==False):
-        print("------ Please unmount the objective ------ ")
+    #while(stage.__check_objective()==False):
+        #print("------ Please unmount the objective ------ ")
 
     # initialize stages
-    stage.__initialize_stages()
+    #stage.__initialize_stages()
 
     # Set GUI
     __GUI_DICT = __spincam_gui()
+    __GUI_DICT2 = __stage_gui()
 
     # Update plot while figure exists
     while plt.fignum_exists(__GUI_DICT['fig'].number):  # pylint: disable=unsubscriptable-object
@@ -1122,6 +1365,7 @@ def main():
     __IMSHOW_DICT = {'imshow': None, 'imshow_size': None}
     __HIST_DICT = {'bar': None}
     __GUI_DICT = None
+    __GUI_DICT2 = None
 
     print('Exiting...')
 
