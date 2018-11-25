@@ -9,7 +9,7 @@ from tkinter import filedialog
 import numpy as np
 import stage
 import time
-import cv2
+# import cv2
 
 
 import matplotlib.pyplot as plt
@@ -36,7 +36,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
-__GUI_DICT2 = None
+__STAGE_DICT = None
 __COM_PORT = 3
 
 __STEP_MIN = 0
@@ -574,165 +574,6 @@ def __ledy(_=None):
 def __ledc(_=None):
     ledserial.send('c')
 
-def __stage_controls(fig, pos, options_height, padding):
-    # Creates stage controls
-    but_width = options_height * 2
-    but_height = options_height * 3
-
-    up_button_pos = [pos[0] + 0.125 - options_height,
-                     pos[1] + pos[3] - 2 * padding - but_height,
-                     but_width,
-                     but_height]
-    up_button_axes = fig.add_axes(up_button_pos)
-    up_button = Button(up_button_axes, '+y')
-    up_button.label.set_fontsize(7)
-
-    down_button_pos = [pos[0] + 0.125 - options_height,
-                       up_button_pos[1] - 2 * but_height,
-                       but_width,
-                       but_height]
-    down_button_axes = fig.add_axes(down_button_pos)
-    down_button = Button(down_button_axes, '-y')
-    down_button.label.set_fontsize(7)
-
-    left_button_pos = [pos[0] + 0.125 - options_height - but_width,
-                       down_button_pos[1] + but_height,
-                       but_width,
-                       but_height]
-    left_button_axes = fig.add_axes(left_button_pos)
-    left_button = Button(left_button_axes, '-x')
-    left_button.label.set_fontsize(7)
-
-    right_button_pos = [pos[0] + 0.125 - options_height + but_width,
-                        left_button_pos[1],
-                        but_width,
-                        but_height]
-    right_button_axes = fig.add_axes(right_button_pos)
-    right_button = Button(right_button_axes, '+x')
-    right_button.label.set_fontsize(7)
-
-    # Set x-y step size
-    xy_step_text_pos = [up_button_pos[0] + 4 * padding,
-                        down_button_pos[1] - 2 * padding - options_height * 2,
-                        0.1 - 2 * padding,
-                        options_height * 2]
-    xy_step_text_axes = fig.add_axes(xy_step_text_pos)
-    xy_step_text = TextBox(xy_step_text_axes, 'xy step size (um)')
-    xy_step_text.label.set_fontsize(7)
-    xy_step_text.set_val(1)
-
-    z_up_button_pos = [left_button_pos[0] - but_width / 2,
-                       xy_step_text_pos[1] - but_height - 2 * padding,
-                       but_width,
-                       but_height]
-    z_up_button_axes = fig.add_axes(z_up_button_pos)
-    z_up_button = Button(z_up_button_axes, '+ z')
-    z_up_button.label.set_fontsize(7)
-
-    z_down_button_pos = [z_up_button_pos[0],
-                         z_up_button_pos[1] - 1.5 * but_height,
-                         but_width,
-                         but_height]
-    z_down_button_axes = fig.add_axes(z_down_button_pos)
-    z_down_button = Button(z_down_button_axes, '- z')
-    z_down_button.label.set_fontsize(7)
-
-    # current position
-    cur_pos_but_pos = [z_down_button_pos[0] + but_width * 2 + 2 * padding,
-                       z_down_button_pos[1] - 2 * padding - options_height * 2,
-                       0.1 - 2 * padding,
-                       options_height * 2]
-    cur_pos_but_axes = fig.add_axes(cur_pos_but_pos)
-    cur_pos_but = TextBox(cur_pos_but_axes, 'current z pos.')
-    cur_pos_but.label.set_fontsize(7)
-    cur_pos_but.set_val(1)
-
-    # Set z step size
-    z_step_text_pos = [up_button_pos[0] + 4 * padding,
-                       cur_pos_but_pos[1] - 2 * padding - options_height * 2,
-                       0.1 - 2 * padding,
-                       options_height * 2]
-    z_step_text_axes = fig.add_axes(z_step_text_pos)
-    z_step_text = TextBox(z_step_text_axes, 'z step size (um)')
-    z_step_text.label.set_fontsize(7)
-    z_step_text.set_val(1)
-
-    # num of steps
-    step_num_text_pos = [up_button_pos[0] + 4 * padding,
-                         z_step_text_pos[1] - 2 * padding - options_height * 2,
-                         0.1 - 2 * padding,
-                         options_height * 2]
-    step_num_text_axes = fig.add_axes(step_num_text_pos)
-    step_num_text = TextBox(step_num_text_axes, '# of steps (radius)')
-    step_num_text.label.set_fontsize(7)
-    step_num_text.set_val(1)
-
-    # z interval
-    z_interval_text_pos = [up_button_pos[0] + 4 * padding,
-                           step_num_text_pos[1] - 2 * padding - options_height * 2,
-                           0.1 - 2 * padding,
-                           options_height * 2]
-    z_interval_text_axes = fig.add_axes(z_interval_text_pos)
-    z_interval_text = TextBox(z_interval_text_axes, 'defocus interval (um)')
-    z_interval_text.label.set_fontsize(7)
-    z_interval_text.set_val(1)
-
-    z_acquire_but_pos = [pos[0] + 2 * padding,
-                         z_interval_text_pos[1] - 2 * padding - options_height * 2,
-                         pos[2] - 4 * padding,
-                         options_height * 2]
-    z_acquire_but_axes = fig.add_axes(z_acquire_but_pos)
-    z_acquire_but = Button(z_acquire_but_axes, 'Start defocus acquisition(s)')
-    z_acquire_but.label.set_fontsize(7)
-
-    red_but_pos = [pos[0] + 3 * padding,
-                   z_acquire_but_pos[1] - 2 * padding - options_height * 2,
-                   but_width,
-                   options_height * 2]
-    red_but_axes = fig.add_axes(red_but_pos)
-    red_but = Button(red_but_axes, 'R')
-    red_but.label.set_fontsize(7)
-
-    yellow_but_pos = [red_but_pos[0] + padding + but_width,
-                      red_but_pos[1],
-                      but_width,
-                      options_height * 2]
-    yellow_but_axes = fig.add_axes(yellow_but_pos)
-    yellow_but = Button(yellow_but_axes, 'OFF')
-    yellow_but.label.set_fontsize(7)
-
-    green_but_pos = [yellow_but_pos[0] + padding + but_width,
-                     yellow_but_pos[1],
-                     but_width,
-                     options_height * 2]
-    green_but_axes = fig.add_axes(green_but_pos)
-    green_but = Button(green_but_axes, 'G')
-    green_but.label.set_fontsize(7)
-
-    blue_but_pos = [green_but_pos[0] + padding + but_width,
-                    green_but_pos[1],
-                    but_width,
-                    options_height * 2]
-    blue_but_axes = fig.add_axes(blue_but_pos)
-    blue_but = Button(blue_but_axes, 'B')
-    blue_but.label.set_fontsize(7)
-
-    return {'up_button': up_button,
-            'down_button': down_button,
-            'left_button': left_button,
-            'right_button': right_button,
-            'z_up_button': z_up_button,
-            'z_down_button': z_down_button,
-            'xy_step_text': xy_step_text,
-            'z_step_text': z_step_text,
-            'step_num_text': step_num_text,
-            'z_interval_text': z_interval_text,
-            'z_acquire_but': z_acquire_but,
-            'red_but': red_but,
-            'yellow_but': yellow_but,
-            'green_but': green_but,
-            'blue_but': blue_but}
-
 
 def __acquire_images():
     global __IMSHOW_DICT
@@ -847,8 +688,6 @@ def __stage_gui():
     but_height = options_height * 3
 	
     pos = [0,0,1,1]
-	
-	
 
     up_button_pos1 = [pos[0] + 0.125 - options_height,
                      pos[1] + pos[3] - 2 * padding - but_height,
@@ -924,30 +763,30 @@ def __stage_gui():
     left_button2.on_clicked(__test)
 	
     # current position
-    x_pos_but_pos1 = [up_button_pos1[0] + 6 * padding,
+    x_pos_but_pos = [up_button_pos1[0] + 6 * padding,
                        down_button_pos2[1] - 2 * padding - options_height * 2,
                        0.1 - 2 * padding,
                        options_height * 2]
-    x_pos_but_axes1 = fig2.add_axes(x_pos_but_pos1)
-    x_pos_but1 = TextBox(x_pos_but_axes1, 'current x pos.')
-    x_pos_but1.label.set_fontsize(7)
-    x_pos_but1.set_val(1)
-    x_pos_but1.on_submit(__test)	
+    x_pos_but_axes = fig2.add_axes(x_pos_but_pos)
+    x_pos_but = TextBox(x_pos_but_axes, 'current x pos.')
+    x_pos_but.label.set_fontsize(7)
+    x_pos_but.set_val(1)
+    x_pos_but.on_submit(__test)	
 	
     # current position
-    y_pos_but_pos1 = [up_button_pos1[0] + 6 * padding,
-                       x_pos_but_pos1[1] - 2 * padding - options_height * 2,
+    y_pos_but_pos = [up_button_pos1[0] + 6 * padding,
+                       x_pos_but_pos[1] - 2 * padding - options_height * 2,
                        0.1 - 2 * padding,
                        options_height * 2]
-    y_pos_but_axes1 = fig2.add_axes(y_pos_but_pos1)
-    y_pos_but1 = TextBox(y_pos_but_axes1, 'current y pos.')
-    y_pos_but1.label.set_fontsize(7)
-    y_pos_but1.set_val(1)
-    y_pos_but1.on_submit(__test)
+    y_pos_but_axes = fig2.add_axes(y_pos_but_pos)
+    y_pos_but = TextBox(y_pos_but_axes, 'current y pos.')
+    y_pos_but.label.set_fontsize(7)
+    y_pos_but.set_val(1)
+    y_pos_but.on_submit(__test)
 
     # Set x-y step size
     xy_step_text_pos1 = [up_button_pos1[0] + 6 * padding,
-                        y_pos_but_pos1[1] - 2 * padding - options_height * 2,
+                        y_pos_but_pos[1] - 2 * padding - options_height * 2,
                         0.1 - 2 * padding,
                         options_height * 2]
     xy_step_text_axes1 = fig2.add_axes(xy_step_text_pos1)
@@ -1004,19 +843,19 @@ def __stage_gui():
     z_down_button2.on_clicked(__test)
 	
     # current position
-    z_pos_but_pos1 = [z_down_button_pos2[0] + but_width * 2,
+    z_pos_but_pos = [z_down_button_pos2[0] + but_width * 2,
                        z_down_button_pos2[1] - 2 * padding - options_height * 2,
                        0.1 - 2 * padding,
                        options_height * 2]
-    z_pos_but_axes1 = fig2.add_axes(z_pos_but_pos1)
-    z_pos_but1 = TextBox(z_pos_but_axes1, 'current z pos.')
-    z_pos_but1.label.set_fontsize(7)
-    z_pos_but1.set_val(1)
-    z_pos_but1.on_submit(__test)
+    z_pos_but_axes = fig2.add_axes(z_pos_but_pos)
+    z_pos_but = TextBox(z_pos_but_axes, 'current z pos.')
+    z_pos_but.label.set_fontsize(7)
+    z_pos_but.set_val(1)
+    z_pos_but.on_submit(__test)
 
     # Set z step size
-    z_step_text_pos1 = [z_pos_but_pos1[0],
-                       z_pos_but_pos1[1] - 2 * padding - options_height * 2,
+    z_step_text_pos1 = [z_pos_but_pos[0],
+                       z_pos_but_pos[1] - 2 * padding - options_height * 2,
                        0.1 - 2 * padding,
                        options_height * 2]
     z_step_text_axes1 = fig2.add_axes(z_step_text_pos1)
@@ -1025,7 +864,7 @@ def __stage_gui():
     z_step_text1.set_val(1)
     z_step_text1.on_submit(__test)
     # Set z step size
-    z_step_text_pos2 = [z_pos_but_pos1[0],
+    z_step_text_pos2 = [z_pos_but_pos[0],
                        z_step_text_pos1[1] - 2 * padding - options_height * 2,
                        0.1 - 2 * padding,
                        options_height * 2]
@@ -1036,26 +875,93 @@ def __stage_gui():
     z_step_text2.on_submit(__test)
 	
     # num of steps
-    step_num_text_pos1 = [z_pos_but_pos1[0],
+    step_num_text_pos = [z_pos_but_pos[0],
                          z_step_text_pos2[1] - 2 * padding - options_height * 2,
                          0.1 - 2 * padding,
                          options_height * 2]
-    step_num_text_axes1 = fig2.add_axes(step_num_text_pos1)
-    step_num_text1 = TextBox(step_num_text_axes1, '# of steps (radius)')
-    step_num_text1.label.set_fontsize(7)
-    step_num_text1.set_val(1)
-    step_num_text1.on_submit(__test)
+    step_num_text_axes = fig2.add_axes(step_num_text_pos)
+    step_num_text = TextBox(step_num_text_axes, '# of steps (radius)')
+    step_num_text.label.set_fontsize(7)
+    step_num_text.set_val(1)
+    step_num_text.on_submit(__test)
 
     # z interval
-    z_interval_text_pos1 = [z_pos_but_pos1[0],
-                           step_num_text_pos1[1] - 2 * padding - options_height * 2,
+    z_interval_text_pos = [z_pos_but_pos[0],
+                           step_num_text_pos[1] - 2 * padding - options_height * 2,
                            0.1 - 2 * padding,
                            options_height * 2]
-    z_interval_text_axes1 = fig2.add_axes(z_interval_text_pos1)
-    z_interval_text1 = TextBox(z_interval_text_axes1, 'defocus interval (um)')
-    z_interval_text1.label.set_fontsize(7)
-    z_interval_text1.set_val(1)
-    z_interval_text1.on_submit(__test)
+    z_interval_text_axes = fig2.add_axes(z_interval_text_pos)
+    z_interval_text = TextBox(z_interval_text_axes, 'defocus interval (um)')
+    z_interval_text.label.set_fontsize(7)
+    z_interval_text.set_val(1)
+    z_interval_text.on_submit(__test)
+	
+	# time btwn z stacks
+    time_btwn_z_text_pos = [z_pos_but_pos[0],
+                           z_interval_text_pos[1] - 2 * padding - options_height * 2,
+                           0.1 - 2 * padding,
+                           options_height * 2]
+    time_btwn_z_text_axes = fig2.add_axes(time_btwn_z_text_pos)
+    time_btwn_z_text = TextBox(time_btwn_z_text_axes, 'time between z stacks')
+    time_btwn_z_text.label.set_fontsize(7)
+    time_btwn_z_text.set_val(1)
+    time_btwn_z_text.on_submit(__test)
+	
+    z_acquire_but_pos = [pos[0] + 3 * padding,
+                           time_btwn_z_text_pos[1] - 2 * padding - options_height * 2,
+                         0.55,
+                         options_height * 2]
+    z_acquire_but_axes = fig2.add_axes(z_acquire_but_pos)
+    z_acquire_but = Button(z_acquire_but_axes, 'Start defocus acquisition(s)')
+    z_acquire_but.label.set_fontsize(7)
+    z_acquire_but.on_clicked(__defocus_acquisition)
+	
+    led_but_width= but_width*2
+	
+    red_but_pos = [pos[0] + 4 * padding,
+                   z_acquire_but_pos[1] - 2 * padding - options_height * 2,
+                   led_but_width,
+                   options_height * 2]
+    red_but_axes = fig2.add_axes(red_but_pos)
+    red_but = Button(red_but_axes, 'R')
+    red_but.label.set_fontsize(7)
+    red_but.on_clicked(__ledr)
+
+    yellow_but_pos = [red_but_pos[0] + 7* padding + but_width,
+                      red_but_pos[1],
+                      led_but_width,
+                      options_height * 2]
+    yellow_but_axes = fig2.add_axes(yellow_but_pos)
+    yellow_but = Button(yellow_but_axes, 'Y')
+    yellow_but.label.set_fontsize(7)
+    yellow_but.on_clicked(__ledy)
+
+    green_but_pos = [yellow_but_pos[0] + 7* padding + but_width,
+                     yellow_but_pos[1],
+                     led_but_width,
+                     options_height * 2]
+    green_but_axes = fig2.add_axes(green_but_pos)
+    green_but = Button(green_but_axes, 'G')
+    green_but.label.set_fontsize(7)
+    green_but.on_clicked(__ledg)
+
+    blue_but_pos = [green_but_pos[0] + 7* padding + but_width,
+                    green_but_pos[1],
+                    led_but_width,
+                    options_height * 2]
+    blue_but_axes = fig2.add_axes(blue_but_pos)
+    blue_but = Button(blue_but_axes, 'B')
+    blue_but.label.set_fontsize(7)
+    blue_but.on_clicked(__ledb)
+	
+    off_but_pos = [blue_but_pos[0] + 7* padding + but_width,
+                    blue_but_pos[1],
+                    led_but_width,
+                    options_height * 2]
+    off_but_axes = fig2.add_axes(off_but_pos)
+    off_but = Button(off_but_axes, 'OFF')
+    off_but.label.set_fontsize(7)
+    off_but.on_clicked(__ledc)
 
     return {'fig2': fig2,
 			'up_button1': up_button1,
@@ -1070,13 +976,22 @@ def __stage_gui():
             'z_down_button1': z_down_button1,
             'z_up_button2': z_up_button2,
             'z_down_button2': z_down_button2,
-            'z_pos_but1':z_pos_but1,
+            'x_pos_but':x_pos_but,
+            'y_pos_but':y_pos_but,
+            'z_pos_but':z_pos_but,
             'xy_step_text1': xy_step_text1,
             'xy_step_text2': xy_step_text2,
             'z_step_text1': z_step_text1,
             'z_step_text2': z_step_text2,
-            'step_num_text1': step_num_text1,
-            'z_interval_text1': z_interval_text1}
+            'step_num_text': step_num_text,
+            'z_interval_text': z_interval_text,
+            'time_btwn_z_text': time_btwn_z_text,
+            'z_acquire_but': z_acquire_but,
+            'red_but': red_but,
+            'yellow_but': yellow_but,
+            'green_but': green_but,
+            'blue_but': blue_but,
+            'off_but':off_but}
 
 def __spincam_gui():
     # Get figure
@@ -1105,38 +1020,6 @@ def __spincam_gui():
     # Set initial values
     # Set callbacks
     display_dict['find_and_init_button'].on_clicked(__find_and_init_cam)
-
-    stage_pos = [cam_plot_width,
-                 cam_plot_height_offset,
-                 0.25,
-                 cam_plot_height]
-
-    stage_dict = __stage_controls(fig,
-                                  stage_pos,
-                                  options_height,
-                                  padding)
-
-    stage_dict['up_button'].on_clicked(__go_up)
-    stage_dict['down_button'].on_clicked(__go_down)
-    stage_dict['left_button'].on_clicked(__go_left)
-    stage_dict['right_button'].on_clicked(__go_right)
-
-    stage_dict['z_up_button'].on_clicked(__go_defocus_up)
-    stage_dict['z_down_button'].on_clicked(__go_defocus_down)
-    stage_dict['z_acquire_but'].on_clicked(__defocus_acquisition)
-
-    stage_dict['red_but'].on_clicked(__ledr)
-    stage_dict['yellow_but'].on_clicked(__ledy)
-    stage_dict['blue_but'].on_clicked(__ledb)
-    stage_dict['green_but'].on_clicked(__ledg)
-
-    stage_dict['xy_step_text'].on_submit(__xy_step)
-    stage_dict['z_step_text'].on_submit(__z_step)
-    stage_dict['step_num_text'].on_submit(__number_defocus)
-
-    stage_dict['xy_step_text'].on_submit(__test)
-    stage_dict['z_step_text'].on_submit(__test)
-    stage_dict['step_num_text'].on_submit(__test)
 
     # Start stream
     start_stream_button_pos = [padding,
@@ -1276,6 +1159,8 @@ def __spincam_gui():
     avg_images_text.label.set_fontsize(7)
     avg_images_text.set_val(10)
 	
+    stage_dict=__stage_gui()
+	
 
     return {'fig': fig,
             'display_dict': display_dict,
@@ -1338,7 +1223,6 @@ def main():
 
     # Set GUI
     __GUI_DICT = __spincam_gui()
-    __GUI_DICT2 = __stage_gui()
 
     # Update plot while figure exists
     while plt.fignum_exists(__GUI_DICT['fig'].number):  # pylint: disable=unsubscriptable-object
@@ -1365,7 +1249,7 @@ def main():
     __IMSHOW_DICT = {'imshow': None, 'imshow_size': None}
     __HIST_DICT = {'bar': None}
     __GUI_DICT = None
-    __GUI_DICT2 = None
+    __STAGE_DICT = None
 
     print('Exiting...')
 
