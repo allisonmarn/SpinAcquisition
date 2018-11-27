@@ -37,12 +37,18 @@ __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
 __STAGE_DICT = None
-__COM_PORT = 3
 
 __STEP_MIN = 0
 __STEP_MAX = 5000
 __Z_STEP = 1
+__Z_STEP_PLUS = 100
+
 __XY_STEP = 1
+__XY_STEP_PLUS = 100
+
+__X_POS = 0
+__Y_POS = 0
+__Z_POS = 0
 __COM_PORT = 5
 
 
@@ -407,71 +413,189 @@ def __exposure_slider(_=None):
 
 
 def __go_right(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS + __XY_STEP
     stage.__go_y(__XY_STEP)
+    __update_pos_y
 
+def __go_right_plus(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS + __XY_STEP_PLUS
+    stage.__go_y(__XY_STEP_PLUS)
+    __update_pos_y
 
 def __go_left(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS - __XY_STEP
     stage.__go_y(-__XY_STEP)
+    __update_pos_y
 
+def __go_left_plus(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS - __XY_STEP_PLUS
+    stage.__go_y(-__XY_STEP_PLUS)
+    __update_pos_y
 
 def __go_up(_=None):
-    stage.__go_x(-__XY_STEP)
+    global __X_POS
+    __X_POS = __X_POS + __XY_STEP
+    stage.__go_x(__XY_STEP)
+    __update_pos_x
 
+def __go_up_plus(_=None):
+    global __X_POS
+    __X_POS = __X_POS + __XY_STEP_PLUS
+    stage.__go_x(+__XY_STEP_PLUS)
+    __update_pos_x
 
 def __go_down(_=None):
-    stage.__go_x(__XY_STEP)
+    global __X_POS
+    __X_POS = __X_POS - __XY_STEP
+    stage.__go_x(-__XY_STEP)
+    __update_pos_x
+
+def __go_down_plus(_=None):
+    global __X_POS
+    __X_POS = __X_POS - __XY_STEP_PLUS
+    stage.__go_x(-__XY_STEP_PLUS)
+    __update_pos_x
 
 
 def __go_defocus_up(_=None):
-    stage.__go_z(-__Z_STEP)
+    global __Z_POS
+    __Z_POS = __Z_POS + __Z_STEP
+    stage.__go_z(+__Z_STEP)
+    __update_pos_z
 
+def __go_defocus_up_plus(_=None):
+    global __Z_POS
+    __Z_POS = __Z_POS + __Z_STEP_PLUS
+    stage.__go_z(+__Z_STEP_PLUS)
+    __update_pos_z
 
 def __go_defocus_down(_=None):
-    stage.__go_z(__Z_STEP)
+    global __Z_POS
+    __Z_POS = __Z_POS - __Z_STEP
+    stage.__go_z(-__Z_STEP)
+    __update_pos_z
+def __go_defocus_down_plus(_=None):
+    global __Z_POS
+    __Z_POS = __Z_POS - __Z_STEP_PLUS
+    stage.__go_z(-__Z_STEP_PLUS)
+    __update_pos_z
 
+def __update_pos_x(_=None):
+    global __X_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'x_pos_but'
+    step = __X_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
+
+def __update_pos_y(_=None):
+    global __Y_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'y_pos_but'
+    step = __Y_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
+
+def __update_pos_z(_=None):
+    global __Z_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'z_pos_but'
+    step = __Z_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
 
 def __xy_step(_=None):
     # xy text callback
     global __XY_STEP
     stage_dict = __GUI_DICT['stage_dict']
-    xy_step = stage_dict['xy_step_text'].text
+    xy_step = stage_dict['xy_step_text1'].text
     if not xy_step:
         return
 
     __XY_STEP = float(xy_step)
 
     # Update slider to match text
-    stage_dict['xy_step_text'].eventson = False
-    stage_dict['xy_step_text'].set_val(__XY_STEP)
-    stage_dict['xy_step_text'].eventson = True
+    stage_dict['xy_step_text1'].eventson = False
+    stage_dict['xy_step_text1'].set_val(__XY_STEP)
+    stage_dict['xy_step_text1'].eventson = True
 
     # Set xy step for the stage
     __XY_STEP = min(__STEP_MAX, __XY_STEP)
     __XY_STEP = max(__STEP_MIN, __XY_STEP)
 
-    print('Transverse step is set to ' + str(__XY_STEP) + ' um')
+    print('Transverse small step is set to ' + str(__XY_STEP) + ' um')
 
+def __xy_step_plus(_=None):
+    # xy text callback
+    global __XY_STEP_PLUS
+    stage_dict = __GUI_DICT['stage_dict']
+    xy_step = stage_dict['xy_step_text2'].text
+    if not xy_step:
+        return
+
+    __XY_STEP_PLUS = float(xy_step)
+
+    # Update slider to match text
+    stage_dict['xy_step_text2'].eventson = False
+    stage_dict['xy_step_text2'].set_val(__XY_STEP_PLUS)
+    stage_dict['xy_step_text2'].eventson = True
+
+    # Set xy step for the stage
+    __XY_STEP = min(__STEP_MAX, __XY_STEP_PLUS)
+    __XY_STEP = max(__STEP_MIN, __XY_STEP_PLUS)
+
+    print('Transverse large step is set to ' + str(__XY_STEP_PLUS) + ' um')
 
 def __z_step(_=None):
     global __Z_STEP
     # z_step text callback
     stage_dict = __GUI_DICT['stage_dict']
-    z_step = stage_dict['z_step_text'].text
+    z_step = stage_dict['z_step_text1'].text
     if not z_step:
         return
 
     __Z_STEP = float(z_step)  # convert mm to um
 
     # Update slider to match text
-    stage_dict['z_step_text'].eventson = False
-    stage_dict['z_step_text'].set_val(__Z_STEP)
-    stage_dict['z_step_text'].eventson = True
+    stage_dict['z_step_text1'].eventson = False
+    stage_dict['z_step_text1'].set_val(__Z_STEP)
+    stage_dict['z_step_text1'].eventson = True
 
     # Set Z_STEp for camera
     __Z_STEP = min(__STEP_MAX, __Z_STEP)
     __Z_STEP = max(__STEP_MIN, __Z_STEP)
 
     print('defocus step is set to ' + str(__Z_STEP) + ' um')
+def __z_step_plus(_=None):
+    global __Z_STEP_PLUS
+    # z_step text callback
+    stage_dict = __GUI_DICT['stage_dict']
+    z_step = stage_dict['z_step_text2'].text
+    if not z_step:
+        return
+
+    __Z_STEP_PLUS = float(z_step)  # convert mm to um
+
+    # Update slider to match text
+    stage_dict['z_step_text2'].eventson = False
+    stage_dict['z_step_text2'].set_val(__Z_STEP_PLUS)
+    stage_dict['z_step_text2'].eventson = True
+
+    # Set Z_STEp for camera
+    __Z_STEP_PLUS = min(__STEP_MAX, __Z_STEP_PLUS)
+    __Z_STEP_PLUS = max(__STEP_MIN, __Z_STEP_PLUS)
+
+    print('Defocus large step is set to ' + str(__Z_STEP_PLUS) + ' um')
 
 
 def __number_defocus(_=None):
@@ -502,9 +626,11 @@ def __number_defocus(_=None):
 
 
 def __defocus_acquisition(_=None):
+    global __Z_POS
     stage_dict = __GUI_DICT['stage_dict']
     num_z_step = int(stage_dict['step_num_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
+    time_int = float(stage_dict['time_btwn_z_text'].text)
 
     # file name
     name_format = __GUI_DICT['name_format_text'].text
@@ -520,6 +646,8 @@ def __defocus_acquisition(_=None):
     # initialize z position for defocus acquisition
     rel_z = (num_z_step + 1) * __Z_STEP
     stage.__go_z(-rel_z)
+    __Z_POS = __Z_POS - rel_z
+    __update_pos_z
     time.sleep(5)
     print('Relative z position %2.2f' % -rel_z)
 
@@ -528,11 +656,30 @@ def __defocus_acquisition(_=None):
             print('Time point %05d' % ii + '  Relative z position %2.2f  um' % (-rel_z + (jj + 1) *
                                                                                 __Z_STEP))
             stage.__go_z(__Z_STEP)
+            __Z_POS = __Z_POS + __Z_STEP
+            __update_pos_z
             data = __acquire_images()
             __save_images(img_name, data, ii, jj)
         print('Defocus acquisition is finished')
+        time.sleep(time_int)    # pause for certain time
     stage.__go_z(-rel_z + __Z_STEP)
+    __Z_POS = __Z_POS - rel_z + __Z_STEP
+    __update_pos_z
 
+def __time_int_def(_=None):
+    # sets the time interval between z-stack frames
+    stage_dict = __GUI_DICT['stage_dict']
+    time_int = stage_dict['time_btwn_z_text'].text
+
+    if not time_int:
+        return
+
+    # Update total defocus to match text
+    stage_dict['time_btwn_z_text'].eventson = False
+    stage_dict['time_btwn_z_text'].set_val(float(time_int))
+    stage_dict['time_btwn_z_text'].eventson = True
+
+    print('Time interval between successive z-stacks is set to ' + str(float(time_int)) + ' sec')
 
 def __exposure_text(_=None):
     # Exposure text callback
@@ -569,7 +716,7 @@ def __ledb(_=None):
 
 
 def __ledy(_=None):
-    ledserial.send('c')
+    ledserial.send('y')
 
 def __ledc(_=None):
     ledserial.send('c')
@@ -696,7 +843,7 @@ def __stage_gui():
     up_button_axes1 = fig2.add_axes(up_button_pos1)
     up_button1 = Button(up_button_axes1, '++y')
     up_button1.label.set_fontsize(7)
-    up_button1.on_clicked(__test)	
+    up_button1.on_clicked(__go_up_plus)
 	
     up_button_pos2 = [pos[0] + 0.125 - options_height,
                      up_button_pos1[1] - but_height,
@@ -705,7 +852,7 @@ def __stage_gui():
     up_button_axes2 = fig2.add_axes(up_button_pos2)
     up_button2 = Button(up_button_axes2, '+y')
     up_button2.label.set_fontsize(7)
-    up_button2.on_clicked(__test)
+    up_button2.on_clicked(__go_up)
 
     down_button_pos1 = [pos[0] + 0.125 - options_height,
                        up_button_pos2[1] - 2 * but_height,
@@ -714,7 +861,7 @@ def __stage_gui():
     down_button_axes1 = fig2.add_axes(down_button_pos1)
     down_button1 = Button(down_button_axes1, '-y')
     down_button1.label.set_fontsize(7)
-    down_button1.on_clicked(__test)
+    down_button1.on_clicked(__go_down)
 
     down_button_pos2 = [pos[0] + 0.125 - options_height,
                        down_button_pos1[1] - but_height,
@@ -723,7 +870,7 @@ def __stage_gui():
     down_button_axes2 = fig2.add_axes(down_button_pos2)
     down_button2 = Button(down_button_axes2, '- -y')
     down_button2.label.set_fontsize(7)
-    down_button2.on_clicked(__test)
+    down_button2.on_clicked(__go_down_plus)
 
 	
     left_button_pos1 = [pos[0] + 0.125 - options_height - but_width,
@@ -733,7 +880,7 @@ def __stage_gui():
     left_button_axes1 = fig2.add_axes(left_button_pos1)
     left_button1 = Button(left_button_axes1, '-x')
     left_button1.label.set_fontsize(7)
-    left_button1.on_clicked(__test)
+    left_button1.on_clicked(__go_left)
 	
     left_button_pos2 = [pos[0] + 0.125 - options_height - 2 * but_width,
                        down_button_pos1[1] + but_height,
@@ -742,7 +889,7 @@ def __stage_gui():
     left_button_axes2 = fig2.add_axes(left_button_pos2)
     left_button2 = Button(left_button_axes2, '- -x')
     left_button2.label.set_fontsize(7)
-    left_button2.on_clicked(__test)
+    left_button2.on_clicked(__go_left_plus)
 
     right_button_pos1 = [pos[0] + 0.125 - options_height + but_width,
                         left_button_pos1[1],
@@ -751,7 +898,7 @@ def __stage_gui():
     right_button_axes1 = fig2.add_axes(right_button_pos1)
     right_button1 = Button(right_button_axes1, '+x')
     right_button1.label.set_fontsize(7)
-    right_button1.on_clicked(__test)
+    right_button1.on_clicked(__go_right)
 
     right_button_pos2 = [pos[0] + 0.125 - options_height + 2 * but_width,
                         left_button_pos1[1],
@@ -760,7 +907,7 @@ def __stage_gui():
     right_button_axes2 = fig2.add_axes(right_button_pos2)
     right_button2 = Button(right_button_axes2, '++x')
     right_button2.label.set_fontsize(7)
-    left_button2.on_clicked(__test)
+    right_button2.on_clicked(__go_right_plus)
 	
     # current position
     x_pos_but_pos = [up_button_pos1[0] + 6 * padding,
@@ -771,7 +918,7 @@ def __stage_gui():
     x_pos_but = TextBox(x_pos_but_axes, 'current x pos.')
     x_pos_but.label.set_fontsize(7)
     x_pos_but.set_val(1)
-    x_pos_but.on_submit(__test)	
+    x_pos_but.on_submit(__update_pos_y)
 	
     # current position
     y_pos_but_pos = [up_button_pos1[0] + 6 * padding,
@@ -782,7 +929,7 @@ def __stage_gui():
     y_pos_but = TextBox(y_pos_but_axes, 'current y pos.')
     y_pos_but.label.set_fontsize(7)
     y_pos_but.set_val(1)
-    y_pos_but.on_submit(__test)
+    y_pos_but.on_submit(__update_pos_x)
 
     # Set x-y step size
     xy_step_text_pos1 = [up_button_pos1[0] + 6 * padding,
@@ -793,7 +940,7 @@ def __stage_gui():
     xy_step_text1 = TextBox(xy_step_text_axes1, '+ xy step size (um)')
     xy_step_text1.label.set_fontsize(7)
     xy_step_text1.set_val(1)
-    xy_step_text1.on_submit(__test)
+    xy_step_text1.on_submit(__xy_step)
 	
     # Set x-y step size
     xy_step_text_pos2 = [up_button_pos1[0] + 6 * padding,
@@ -803,8 +950,8 @@ def __stage_gui():
     xy_step_text_axes2 = fig2.add_axes(xy_step_text_pos2)
     xy_step_text2 = TextBox(xy_step_text_axes2, '++ xy step size (um)')
     xy_step_text2.label.set_fontsize(7)
-    xy_step_text2.set_val(1)
-    xy_step_text2.on_submit(__test)
+    xy_step_text2.set_val(100)
+    xy_step_text2.on_submit(__xy_step_plus)
 	
     z_up_button_pos1 = [up_button_pos1[0] + 8 * but_width,
                        up_button_pos1[1],
@@ -813,7 +960,7 @@ def __stage_gui():
     z_up_button_axes1 = fig2.add_axes(z_up_button_pos1)
     z_up_button1 = Button(z_up_button_axes1, '++z')
     z_up_button1.label.set_fontsize(7)
-    z_up_button1.on_clicked(__test)
+    z_up_button1.on_clicked(__go_defocus_up_plus)
 
     z_up_button_pos2 = [z_up_button_pos1[0],
                        up_button_pos2[1],
@@ -822,7 +969,7 @@ def __stage_gui():
     z_up_button_axes2 = fig2.add_axes(z_up_button_pos2)
     z_up_button2 = Button(z_up_button_axes2, '+ z')
     z_up_button2.label.set_fontsize(7)
-    z_up_button2.on_clicked(__test)
+    z_up_button2.on_clicked(__go_defocus_up)
 
     z_down_button_pos1 = [z_up_button_pos2[0],
                          z_up_button_pos2[1] - 2 * but_height,
@@ -831,7 +978,7 @@ def __stage_gui():
     z_down_button_axes1 = fig2.add_axes(z_down_button_pos1)
     z_down_button1 = Button(z_down_button_axes1, '- z')
     z_down_button1.label.set_fontsize(7)
-    z_down_button1.on_clicked(__test)
+    z_down_button1.on_clicked(__go_defocus_down)
 
     z_down_button_pos2 = [z_up_button_pos2[0],
                          z_down_button_pos1[1] - but_height,
@@ -840,7 +987,7 @@ def __stage_gui():
     z_down_button_axes2 = fig2.add_axes(z_down_button_pos2)
     z_down_button2 = Button(z_down_button_axes2, '- - z')
     z_down_button2.label.set_fontsize(7)
-    z_down_button2.on_clicked(__test)
+    z_down_button2.on_clicked(__go_defocus_down_plus)
 	
     # current position
     z_pos_but_pos = [z_down_button_pos2[0] + but_width * 2,
@@ -851,7 +998,7 @@ def __stage_gui():
     z_pos_but = TextBox(z_pos_but_axes, 'current z pos.')
     z_pos_but.label.set_fontsize(7)
     z_pos_but.set_val(1)
-    z_pos_but.on_submit(__test)
+    z_pos_but.on_submit(__update_pos_z)
 
     # Set z step size
     z_step_text_pos1 = [z_pos_but_pos[0],
@@ -862,7 +1009,8 @@ def __stage_gui():
     z_step_text1 = TextBox(z_step_text_axes1, '+ z step size (um)')
     z_step_text1.label.set_fontsize(7)
     z_step_text1.set_val(1)
-    z_step_text1.on_submit(__test)
+    z_step_text1.on_submit(__z_step)
+
     # Set z step size
     z_step_text_pos2 = [z_pos_but_pos[0],
                        z_step_text_pos1[1] - 2 * padding - options_height * 2,
@@ -871,8 +1019,8 @@ def __stage_gui():
     z_step_text_axes2 = fig2.add_axes(z_step_text_pos2)
     z_step_text2 = TextBox(z_step_text_axes2, '++ z step size (um)')
     z_step_text2.label.set_fontsize(7)
-    z_step_text2.set_val(1)
-    z_step_text2.on_submit(__test)
+    z_step_text2.set_val(100)
+    z_step_text2.on_submit(__z_step_plus)
 	
     # num of steps
     step_num_text_pos = [z_pos_but_pos[0],
@@ -883,7 +1031,7 @@ def __stage_gui():
     step_num_text = TextBox(step_num_text_axes, '# of steps (radius)')
     step_num_text.label.set_fontsize(7)
     step_num_text.set_val(1)
-    step_num_text.on_submit(__test)
+    step_num_text.on_submit(__number_defocus)
 
     # z interval
     z_interval_text_pos = [z_pos_but_pos[0],
@@ -905,7 +1053,7 @@ def __stage_gui():
     time_btwn_z_text = TextBox(time_btwn_z_text_axes, 'time between z stacks')
     time_btwn_z_text.label.set_fontsize(7)
     time_btwn_z_text.set_val(1)
-    time_btwn_z_text.on_submit(__test)
+    time_btwn_z_text.on_submit(__time_int_def)
 	
     z_acquire_but_pos = [pos[0] + 3 * padding,
                            time_btwn_z_text_pos[1] - 2 * padding - options_height * 2,
@@ -1250,6 +1398,7 @@ def main():
     __HIST_DICT = {'bar': None}
     __GUI_DICT = None
     __STAGE_DICT = None
+    ledserial.send('c')
 
     print('Exiting...')
 

@@ -40,13 +40,13 @@ def __initialize_stages():
 
     # go to home positions
 
-    print('Going to default positions...')
-    __cntrl_x.move_to(x_pos)
-    time.sleep(1)
-    __cntrl_y.move_to(y_pos)
-    time.sleep(1)
-    __cntrl_z.move_to(z_pos)
-    time.sleep(20)    # pause 5 to homing
+    # print('Going to default positions...')
+    # __cntrl_x.move_to(x_pos)
+    # time.sleep(1)
+    # __cntrl_y.move_to(y_pos)
+    # time.sleep(1)
+    # __cntrl_z.move_to(z_pos)
+    # time.sleep(20)    # pause 5 to homing
     print('Stages are ready...')
 
 
