@@ -7,7 +7,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 
 import numpy as np
-import stage
+#import stage
 import time
 # import cv2
 
@@ -37,12 +37,18 @@ __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
 __STAGE_DICT = None
-__COM_PORT = 3
 
 __STEP_MIN = 0
 __STEP_MAX = 5000
 __Z_STEP = 1
+__Z_STEP_PLUS = 100
+
 __XY_STEP = 1
+__XY_STEP_PLUS = 100
+
+__X_POS = 0
+__Y_POS = 0
+__Z_POS = 0
 __COM_PORT = 5
 
 
@@ -407,71 +413,189 @@ def __exposure_slider(_=None):
 
 
 def __go_right(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS + __XY_STEP
     stage.__go_y(__XY_STEP)
+    __update_pos_y
 
+def __go_right_plus(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS + __XY_STEP_PLUS
+    stage.__go_y(__XY_STEP_PLUS)
+    __update_pos_y
 
 def __go_left(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS - __XY_STEP
     stage.__go_y(-__XY_STEP)
+    __update_pos_y
 
+def __go_left_plus(_=None):
+    global __Y_POS
+    __Y_POS = __Y_POS - __XY_STEP_PLUS
+    stage.__go_y(-__XY_STEP_PLUS)
+    __update_pos_y
 
 def __go_up(_=None):
-    stage.__go_x(-__XY_STEP)
+    global __X_POS
+    __X_POS = __X_POS + __XY_STEP
+    stage.__go_x(__XY_STEP)
+    __update_pos_x
 
+def __go_up_plus(_=None):
+    global __X_POS
+    __X_POS = __X_POS + __XY_STEP_PLUS
+    stage.__go_x(+__XY_STEP_PLUS)
+    __update_pos_x
 
 def __go_down(_=None):
-    stage.__go_x(__XY_STEP)
+    global __X_POS
+    __X_POS = __X_POS - __XY_STEP
+    stage.__go_x(-__XY_STEP)
+    __update_pos_x
+
+def __go_down_plus(_=None):
+    global __X_POS
+    __X_POS = __X_POS - __XY_STEP_PLUS
+    stage.__go_x(-__XY_STEP_PLUS)
+    __update_pos_x
 
 
 def __go_defocus_up(_=None):
-    stage.__go_z(-__Z_STEP)
+    global __Z_POS
+    __Z_POS = __Z_POS + __Z_STEP
+    stage.__go_z(+__Z_STEP)
+    __update_pos_z
 
+def __go_defocus_up_plus(_=None):
+    global __Z_POS
+    __Z_POS = __Z_POS + __Z_STEP_PLUS
+    stage.__go_z(+__Z_STEP_PLUS)
+    __update_pos_z
 
 def __go_defocus_down(_=None):
-    stage.__go_z(__Z_STEP)
+    global __Z_POS
+    __Z_POS = __Z_POS - __Z_STEP
+    stage.__go_z(-__Z_STEP)
+    __update_pos_z
+def __go_defocus_down_plus(_=None):
+    global __Z_POS
+    __Z_POS = __Z_POS - __Z_STEP_PLUS
+    stage.__go_z(-__Z_STEP_PLUS)
+    __update_pos_z
 
+def __update_pos_x(_=None):
+    global __X_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'x_pos_but'
+    step = __X_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
+
+def __update_pos_y(_=None):
+    global __Y_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'y_pos_but'
+    step = __Y_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
+
+def __update_pos_z(_=None):
+    global __Z_POS
+    # updates the current postion
+    stage_dict = __GUI_DICT['stage_dict']
+    pos = 'z_pos_but'
+    step = __Z_POS
+    stage_dict[pos].eventson = False
+    stage_dict[pos].set_val(step)
+    stage_dict[pos].eventson = True
 
 def __xy_step(_=None):
     # xy text callback
     global __XY_STEP
     stage_dict = __GUI_DICT['stage_dict']
-    xy_step = stage_dict['xy_step_text'].text
+    xy_step = stage_dict['xy_step_text1'].text
     if not xy_step:
         return
 
     __XY_STEP = float(xy_step)
 
     # Update slider to match text
-    stage_dict['xy_step_text'].eventson = False
-    stage_dict['xy_step_text'].set_val(__XY_STEP)
-    stage_dict['xy_step_text'].eventson = True
+    stage_dict['xy_step_text1'].eventson = False
+    stage_dict['xy_step_text1'].set_val(__XY_STEP)
+    stage_dict['xy_step_text1'].eventson = True
 
     # Set xy step for the stage
     __XY_STEP = min(__STEP_MAX, __XY_STEP)
     __XY_STEP = max(__STEP_MIN, __XY_STEP)
 
-    print('Transverse step is set to ' + str(__XY_STEP) + ' um')
+    print('Transverse small step is set to ' + str(__XY_STEP) + ' um')
 
+def __xy_step_plus(_=None):
+    # xy text callback
+    global __XY_STEP_PLUS
+    stage_dict = __GUI_DICT['stage_dict']
+    xy_step = stage_dict['xy_step_text2'].text
+    if not xy_step:
+        return
+
+    __XY_STEP_PLUS = float(xy_step)
+
+    # Update slider to match text
+    stage_dict['xy_step_text2'].eventson = False
+    stage_dict['xy_step_text2'].set_val(__XY_STEP_PLUS)
+    stage_dict['xy_step_text2'].eventson = True
+
+    # Set xy step for the stage
+    __XY_STEP = min(__STEP_MAX, __XY_STEP_PLUS)
+    __XY_STEP = max(__STEP_MIN, __XY_STEP_PLUS)
+
+    print('Transverse large step is set to ' + str(__XY_STEP_PLUS) + ' um')
 
 def __z_step(_=None):
     global __Z_STEP
     # z_step text callback
     stage_dict = __GUI_DICT['stage_dict']
-    z_step = stage_dict['z_step_text'].text
+    z_step = stage_dict['z_step_text1'].text
     if not z_step:
         return
 
     __Z_STEP = float(z_step)  # convert mm to um
 
     # Update slider to match text
-    stage_dict['z_step_text'].eventson = False
-    stage_dict['z_step_text'].set_val(__Z_STEP)
-    stage_dict['z_step_text'].eventson = True
+    stage_dict['z_step_text1'].eventson = False
+    stage_dict['z_step_text1'].set_val(__Z_STEP)
+    stage_dict['z_step_text1'].eventson = True
 
     # Set Z_STEp for camera
     __Z_STEP = min(__STEP_MAX, __Z_STEP)
     __Z_STEP = max(__STEP_MIN, __Z_STEP)
 
     print('defocus step is set to ' + str(__Z_STEP) + ' um')
+def __z_step_plus(_=None):
+    global __Z_STEP_PLUS
+    # z_step text callback
+    stage_dict = __GUI_DICT['stage_dict']
+    z_step = stage_dict['z_step_text2'].text
+    if not z_step:
+        return
+
+    __Z_STEP_PLUS = float(z_step)  # convert mm to um
+
+    # Update slider to match text
+    stage_dict['z_step_text2'].eventson = False
+    stage_dict['z_step_text2'].set_val(__Z_STEP_PLUS)
+    stage_dict['z_step_text2'].eventson = True
+
+    # Set Z_STEp for camera
+    __Z_STEP_PLUS = min(__STEP_MAX, __Z_STEP_PLUS)
+    __Z_STEP_PLUS = max(__STEP_MIN, __Z_STEP_PLUS)
+
+    print('Defocus large step is set to ' + str(__Z_STEP_PLUS) + ' um')
 
 
 def __number_defocus(_=None):
@@ -502,9 +626,11 @@ def __number_defocus(_=None):
 
 
 def __defocus_acquisition(_=None):
+    global __Z_POS
     stage_dict = __GUI_DICT['stage_dict']
     num_z_step = int(stage_dict['step_num_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
+    time_int = float(stage_dict['time_btwn_z_text'].text)
 
     # file name
     name_format = __GUI_DICT['name_format_text'].text
@@ -520,6 +646,8 @@ def __defocus_acquisition(_=None):
     # initialize z position for defocus acquisition
     rel_z = (num_z_step + 1) * __Z_STEP
     stage.__go_z(-rel_z)
+    __Z_POS = __Z_POS - rel_z
+    __update_pos_z
     time.sleep(5)
     print('Relative z position %2.2f' % -rel_z)
 
@@ -528,11 +656,30 @@ def __defocus_acquisition(_=None):
             print('Time point %05d' % ii + '  Relative z position %2.2f  um' % (-rel_z + (jj + 1) *
                                                                                 __Z_STEP))
             stage.__go_z(__Z_STEP)
+            __Z_POS = __Z_POS + __Z_STEP
+            __update_pos_z
             data = __acquire_images()
             __save_images(img_name, data, ii, jj)
         print('Defocus acquisition is finished')
+        time.sleep(time_int)    # pause for certain time
     stage.__go_z(-rel_z + __Z_STEP)
+    __Z_POS = __Z_POS - rel_z + __Z_STEP
+    __update_pos_z
 
+def __time_int_def(_=None):
+    # sets the time interval between z-stack frames
+    stage_dict = __GUI_DICT['stage_dict']
+    time_int = stage_dict['time_btwn_z_text'].text
+
+    if not time_int:
+        return
+
+    # Update total defocus to match text
+    stage_dict['time_btwn_z_text'].eventson = False
+    stage_dict['time_btwn_z_text'].set_val(float(time_int))
+    stage_dict['time_btwn_z_text'].eventson = True
+
+    print('Time interval between successive z-stacks is set to ' + str(float(time_int)) + ' sec')
 
 def __exposure_text(_=None):
     # Exposure text callback
@@ -569,7 +716,7 @@ def __ledb(_=None):
 
 
 def __ledy(_=None):
-    ledserial.send('c')
+    ledserial.send('y')
 
 def __ledc(_=None):
     ledserial.send('c')
@@ -592,6 +739,9 @@ def __acquire_images():
 
     counter = 0
     file_number = 1
+
+    if (time_btwn_frames != 0):
+        num_to_avg = int(frmrate * time_btwn_frames)
 
     image_dict = spincam.get_image_and_avg(num_to_avg)
 
@@ -639,10 +789,14 @@ def __save_fourcolor(save_type):
     counter = int(__GUI_DICT['counter_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
     frmrate = int(spincam.get_frame_rate())
     directory = __GUI_DICT['directory_text'].text
     counter = 0
     file_number = 1
+
+    if (time_btwn_frames != 0):
+        num_to_avg = int(frmrate * time_btwn_frames)
 
     img_name = name_format.replace('{date}', str(datetime.date.today()))
 
@@ -1197,11 +1351,11 @@ def main():
     global __GUI_DICT
 
     # check microscope objective
-    while(stage.__check_objective()==False):
-        print("------ Please unmount the objective ------ ")
+    #while(stage.__check_objective()==False):
+    #    print("------ Please unmount the objective ------ ")
 
     # initialize stages
-    stage.__initialize_stages()
+    #stage.__initialize_stages()
 
     # Set GUI
     __GUI_DICT = __spincam_gui()
@@ -1232,6 +1386,7 @@ def main():
     __HIST_DICT = {'bar': None}
     __GUI_DICT = None
     __STAGE_DICT = None
+    ledserial.send('c')
 
     print('Exiting...')
 
