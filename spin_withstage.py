@@ -7,7 +7,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 
 import numpy as np
-#import stage
+import stage
 import time
 # import cv2
 
@@ -1338,9 +1338,10 @@ def __stream_images():
             #                                                   __HIST_DICT)
 
     except:  # pylint: disable=bare-except
-        if __STREAM:
+        print("can't get image")
+    #    if __STREAM:
             # Only re-raise error if stream is still enabled
-            raise
+    #        raise
 
 
 def main():
@@ -1351,11 +1352,11 @@ def main():
     global __GUI_DICT
 
     # check microscope objective
-    #while(stage.__check_objective()==False):
-    #    print("------ Please unmount the objective ------ ")
+    while(stage.__check_objective()==False):
+        print("------ Please unmount the objective ------ ")
 
     # initialize stages
-    #stage.__initialize_stages()
+    stage.__initialize_stages()
 
     # Set GUI
     __GUI_DICT = __spincam_gui()
