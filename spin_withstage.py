@@ -593,9 +593,6 @@ def __acquire_images():
     counter = 0
     file_number = 1
 
-    if (time_btwn_frames != 0):
-        num_to_avg = int(frmrate * time_btwn_frames)
-
     image_dict = spincam.get_image_and_avg(num_to_avg)
 
     # Make sure images are complete
@@ -642,14 +639,10 @@ def __save_fourcolor(save_type):
     counter = int(__GUI_DICT['counter_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
-    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
     frmrate = int(spincam.get_frame_rate())
     directory = __GUI_DICT['directory_text'].text
     counter = 0
     file_number = 1
-
-    if (time_btwn_frames != 0):
-        num_to_avg = int(frmrate * time_btwn_frames)
 
     img_name = name_format.replace('{date}', str(datetime.date.today()))
 
@@ -1072,7 +1065,7 @@ def __spincam_gui():
     exposure_text.on_submit(__exposure_text)
 
     # Set default directory to current
-    directory_pos = [padding, exposure_pos[1] - options_height - padding, 0.75 - 2 * padding,
+    directory_pos = [0.13, exposure_pos[1], 0.66,
                      options_height]
     directory_axes = fig2.add_axes(directory_pos)
     directory_text = TextBox(directory_axes, 'Directory')
@@ -1081,7 +1074,7 @@ def __spincam_gui():
 
     directory_button_pos = [directory_pos[0] + directory_pos[2] + padding,
                             directory_pos[1],
-                            0.25 - 2 * padding,
+                            0.16,
                             options_height]
     directory_button_axes = fig2.add_axes(directory_button_pos)
     directory_button = Button(directory_button_axes, 'Choose Directory')
@@ -1090,63 +1083,32 @@ def __spincam_gui():
     directory_button.on_clicked(__choose_directory)
 
     # Set name format
-    name_format_pos = [(0.5 - 2 * padding) * 0.1875 + 2 * padding,
+    name_format_pos = [directory_pos[0],
                        directory_pos[1] - options_height - padding,
-                       (0.5 - 2 * padding) * 0.8125 - padding,
+                       0.5,
                        options_height]
     name_format_axes = fig2.add_axes(name_format_pos)
     name_format_text = TextBox(name_format_axes, 'Name format')
     name_format_text.label.set_fontsize(7)
     name_format_text.set_val('test_{date}')
 
-    # Set counter
-    counter_pos = [name_format_pos[0] + name_format_pos[2] + padding + (
-            0.5 - 2 * padding) * 0.1875 + 2 * padding,
-                   directory_pos[1] - options_height - padding,
-                   (0.5 - 2 * padding) * 0.8125 - padding,
-                   options_height]
-    counter_axes = fig2.add_axes(counter_pos)
-    counter_text = TextBox(counter_axes, 'Counter')
-    counter_text.label.set_fontsize(7)
-    counter_text.set_val(1)
-
     # Set save primary button
-    save_button_pos = [padding,
+    save_button_pos = [directory_pos[1],
                        name_format_pos[1] - options_height - padding,
-                       (0.5 - 4 * padding) / 3,
+                       0.2,
                        options_height]
     save_button_axes = fig2.add_axes(save_button_pos)
     save_button = Button(save_button_axes, 'Start Acquisition(no z-scan)')
     save_button.label.set_fontsize(7)
     # Set callback
     save_button.on_clicked(__acquire_images)
-
+	
     # Set num images text
     num_images_text_pos = [cam_plot_width - 20 * padding,
                            padding,
                            0.1 - 2 * padding,
                            options_height]
     save_button.on_clicked(__save_fourcolor)
-
-    # Set num images text
-    num_images_text_pos = [cam_plot_width - 20 * padding,
-                           padding,
-                           0.1 - 2 * padding,
-                           options_height]
-    num_images_text_axes = fig2.add_axes(num_images_text_pos)
-    num_images_text = TextBox(num_images_text_axes, '# to Acquire')
-    num_images_text.label.set_fontsize(7)
-    num_images_text.set_val(1)
-
-    # Set num images text
-    time_images_text_pos = [cam_plot_width + 6 * padding,
-                            padding,
-                            0.2 - 2 * padding,
-                            options_height]
-    time_images_text_axes = fig2.add_axes(time_images_text_pos)
-    time_images_text = TextBox(time_images_text_axes, 'Time between frames (s)')
-    time_images_text.label.set_fontsize(7)
-    time_images_text.set_val(0)
 
     # Set num images text
     avg_images_text_pos = [save_button_pos[0] + save_button_pos[2] + padding + (
@@ -1158,6 +1120,27 @@ def __spincam_gui():
     avg_images_text = TextBox(avg_images_text_axes, '# to Avg')
     avg_images_text.label.set_fontsize(7)
     avg_images_text.set_val(10)
+
+    # Set counter
+    counter_pos = [name_format_pos[0]+name_format_pos[2] + 10 * padding,
+                   directory_pos[1] - options_height - padding,
+                   0.2,
+                   options_height]
+    counter_axes = fig2.add_axes(counter_pos)
+    counter_text = TextBox(counter_axes, 'Counter')
+    counter_text.label.set_fontsize(7)
+    counter_text.set_val(1)
+	
+    # Set num images text
+    num_images_text_pos = [avg_images_text_pos[0]+avg_images_text_pos[2] + 12 * padding,
+                           name_format_pos[1] - options_height - padding,
+                           0.1 - 2 * padding,
+                           options_height]
+    num_images_text_axes = fig2.add_axes(num_images_text_pos)
+    num_images_text = TextBox(num_images_text_axes, '# to Acquire')
+    num_images_text.label.set_fontsize(7)
+    num_images_text.set_val(1)
+	
 	
     stage_dict=__stage_gui(fig2)
 	
@@ -1176,7 +1159,6 @@ def __spincam_gui():
             'fps_text': fps_text,
             'exposure_slider': exposure_slider,
             'exposure_text': exposure_text,
-            'time_images_text': time_images_text,
             'directory_text': directory_text,
             'directory_button': directory_button}
 
