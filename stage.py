@@ -35,7 +35,7 @@ def __initialize_stages():
     __cntrl_y.move_home()
     time.sleep(1)    # pause 5 to homing
     __cntrl_z.move_home()
-    time.sleep(60)    # pause 5 to homing
+    time.sleep(20)    # pause 5 to homing
     print('Homing is finished...')
 
     # go to home positions

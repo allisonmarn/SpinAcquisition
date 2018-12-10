@@ -1,11 +1,11 @@
 import sys
-import queue
+#import queue
 import functools
 import datetime
 import serial
 from tkinter import messagebox
 from tkinter import filedialog
-
+from subprocess import Popen
 import numpy as np
 import stage
 import time
@@ -24,14 +24,14 @@ import ledserial
 
 # Camera Properties Min/Max
 __FPS_MIN = 1
-__FPS_MAX = 67
+__FPS_MAX = 30
 __GAIN_MIN = 0
 __GAIN_MAX = 47  # Units are dB
 __EXPOSURE_MIN = 0.006  # microseconds
-__EXPOSURE_MAX = 2999999  # microseconds seconds
+__EXPOSURE_MAX = 200000  # microseconds seconds
 
 # GUI params
-__QUEUE = queue.Queue()
+#__QUEUE = queue.Queue()
 __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
@@ -115,6 +115,8 @@ def __choose_directory(_=None):
     dir = filedialog.askdirectory()
     __GUI_DICT['directory_text'].set_val(dir)
 
+def __open_preview(_=None):
+    Popen('flycap.exe')
 
 def __start_stream(_=None):
     # Starts stream of cameras
@@ -186,9 +188,21 @@ def __plot_image(image, max_val, image_axes, imshow_dict):
     return imshow_dict
 
 
-def __plot_hist(image, max_val, hist_axes, hist_dict):
+def __plot_hist(_=None):
     # plots histogram
-
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    # grab an image
+    if (__STREAM):
+        __stop_stream()
+    time.sleep(10)
+    __start_stream()
+    time.sleep(5)
+    image_dict = spincam.get_image_and_avg(num_to_avg)
+    image = image_dict['data']
+    max_val = 2**image_dict['bitsperpixel']-1
+    hist_axes =__GUI_DICT['display_dict']['hist_axes']
+    hist_dict =__HIST_DICT
+    __stop_stream()
     # Calculate histogram
     num_bins = 100
     hist, bins = np.histogram(image.ravel(), bins=num_bins, range=(0, max_val))
@@ -605,7 +619,7 @@ def __number_defocus(_=None):
 
     if not num_z_step:
         return
-    defocus_interval = (2 * float(num_z_step) + 1) * float(__Z_STEP)
+    defocus_interval = (2 * float(num_z_step)) * float(__Z_STEP)
 
     # Update total defocus to match text
     stage_dict['z_interval_text'].eventson = False
@@ -626,6 +640,11 @@ def __number_defocus(_=None):
 
 
 def __defocus_acquisition(_=None):
+    if (__STREAM):
+        __stop_stream()
+    time.sleep(10)
+    __start_stream()
+    time.sleep(5)
     global __Z_POS
     stage_dict = __GUI_DICT['stage_dict']
     num_z_step = int(stage_dict['step_num_text'].text)
@@ -650,8 +669,8 @@ def __defocus_acquisition(_=None):
     __update_pos_z
     time.sleep(5)
     print('Relative z position %2.2f' % -rel_z)
-
     for ii in range(num_images):
+        print('Defocus acquisition %05d' %ii + 'is started... ')
         for jj in range(1, 2 * num_z_step + 2):
             print('Time point %05d' % ii + '  Relative z position %2.2f  um' % (-rel_z + (jj + 1) *
                                                                                 __Z_STEP))
@@ -660,11 +679,17 @@ def __defocus_acquisition(_=None):
             __update_pos_z
             data = __acquire_images()
             __save_images(img_name, data, ii, jj)
-        print('Defocus acquisition is finished')
+        print('Defocus acquisition %05d' %ii  + 'is finished')
+        stage.__go_z(-2*rel_z + __Z_STEP)
         time.sleep(time_int)    # pause for certain time
+        __Z_POS = __Z_POS - 2*rel_z + __Z_STEP
+        __update_pos_z
+
     stage.__go_z(-rel_z + __Z_STEP)
+    time.sleep(time_int)    # pause for certain time
     __Z_POS = __Z_POS - rel_z + __Z_STEP
     __update_pos_z
+    __stop_stream()
 
 def __time_int_def(_=None):
     # sets the time interval between z-stack frames
@@ -722,7 +747,36 @@ def __ledc(_=None):
     ledserial.send('c')
 
 
-def __acquire_images():
+def __fix_name(_=None):
+    # file name
+    name_format = __GUI_DICT['name_format_text'].text
+    directory = __GUI_DICT['directory_text'].text
+    if directory:
+        directory = directory + '\\'
+    img_name = name_format.replace('{date}', str(datetime.date.today()))
+    img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
+    return img_main
+
+def __acquire_no_z(_=None):
+    if (__STREAM):
+        __stop_stream()
+    time.sleep(10)
+    __start_stream()
+    time.sleep(5)
+    global __GUI_DICT
+
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    img_name=__fix_name()
+    image_dict = spincam.get_image_and_avg(num_to_avg)
+    print('Starting save ' + img_name)
+    # Make sure images are complete
+    if 'data' in image_dict:
+        data=image_dict['data'].astype(np.uint16)
+        __save_images(img_name, data,0,0)
+        print('Finished Acquiring ' + img_name)
+    __stop_stream()
+
+def __acquire_images(_=None):
     global __IMSHOW_DICT
     global __HIST_DICT
     if not __STREAM:
@@ -734,14 +788,14 @@ def __acquire_images():
 
     counter = int(__GUI_DICT['counter_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
-    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
-    frmrate = int(spincam.get_frame_rate())
+    #time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    #frmrate = int(spincam.get_frame_rate())
 
     counter = 0
     file_number = 1
 
-    if (time_btwn_frames != 0):
-        num_to_avg = int(frmrate * time_btwn_frames)
+    #if (time_btwn_frames != 0):
+    #    num_to_avg = int(frmrate * time_btwn_frames)
 
     image_dict = spincam.get_image_and_avg(num_to_avg)
 
@@ -789,14 +843,14 @@ def __save_fourcolor(save_type):
     counter = int(__GUI_DICT['counter_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
-    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    #time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
     frmrate = int(spincam.get_frame_rate())
     directory = __GUI_DICT['directory_text'].text
     counter = 0
     file_number = 1
 
-    if (time_btwn_frames != 0):
-        num_to_avg = int(frmrate * time_btwn_frames)
+    #if (time_btwn_frames != 0):
+    #    num_to_avg = int(frmrate * time_btwn_frames)
 
     img_name = name_format.replace('{date}', str(datetime.date.today()))
 
@@ -826,13 +880,13 @@ def __save_fourcolor(save_type):
     print('Finished Acquiring ' + img_name)
 
 def __stage_gui(fig2):
-    	
+
     # Creates stage controls
     options_height = 0.02
     padding = 0.01
     but_width = options_height * 2
     but_height = options_height * 3
-	
+
     pos = [0,0,1,1]
 
     up_button_pos1 = [pos[0] + 0.125 - options_height,
@@ -842,8 +896,8 @@ def __stage_gui(fig2):
     up_button_axes1 = fig2.add_axes(up_button_pos1)
     up_button1 = Button(up_button_axes1, '++y')
     up_button1.label.set_fontsize(7)
-    up_button1.on_clicked(__test)	
-	
+    up_button1.on_clicked(__go_up_plus)
+
     up_button_pos2 = [pos[0] + 0.125 - options_height,
                      up_button_pos1[1] - but_height,
                      but_width,
@@ -851,7 +905,7 @@ def __stage_gui(fig2):
     up_button_axes2 = fig2.add_axes(up_button_pos2)
     up_button2 = Button(up_button_axes2, '+y')
     up_button2.label.set_fontsize(7)
-    up_button2.on_clicked(__test)
+    up_button2.on_clicked(__go_up)
 
     down_button_pos1 = [pos[0] + 0.125 - options_height,
                        up_button_pos2[1] - 2 * but_height,
@@ -860,18 +914,18 @@ def __stage_gui(fig2):
     down_button_axes1 = fig2.add_axes(down_button_pos1)
     down_button1 = Button(down_button_axes1, '-y')
     down_button1.label.set_fontsize(7)
-    down_button1.on_clicked(__test)
+    down_button1.on_clicked(__go_down)
 
     down_button_pos2 = [pos[0] + 0.125 - options_height,
                        down_button_pos1[1] - but_height,
                        but_width,
                        but_height]
     down_button_axes2 = fig2.add_axes(down_button_pos2)
-    down_button2 = Button(down_button_axes2, '- -y')
+    down_button2 = Button(down_button_axes2, '--y')
     down_button2.label.set_fontsize(7)
-    down_button2.on_clicked(__test)
+    down_button2.on_clicked(__go_down_plus)
 
-	
+
     left_button_pos1 = [pos[0] + 0.125 - options_height - but_width,
                        down_button_pos1[1] + but_height,
                        but_width,
@@ -879,16 +933,16 @@ def __stage_gui(fig2):
     left_button_axes1 = fig2.add_axes(left_button_pos1)
     left_button1 = Button(left_button_axes1, '-x')
     left_button1.label.set_fontsize(7)
-    left_button1.on_clicked(__test)
-	
+    left_button1.on_clicked(__go_left)
+
     left_button_pos2 = [pos[0] + 0.125 - options_height - 2 * but_width,
                        down_button_pos1[1] + but_height,
                        but_width,
                        but_height]
     left_button_axes2 = fig2.add_axes(left_button_pos2)
-    left_button2 = Button(left_button_axes2, '- -x')
+    left_button2 = Button(left_button_axes2, '--x')
     left_button2.label.set_fontsize(7)
-    left_button2.on_clicked(__test)
+    left_button2.on_clicked(__go_left_plus)
 
     right_button_pos1 = [pos[0] + 0.125 - options_height + but_width,
                         left_button_pos1[1],
@@ -897,7 +951,7 @@ def __stage_gui(fig2):
     right_button_axes1 = fig2.add_axes(right_button_pos1)
     right_button1 = Button(right_button_axes1, '+x')
     right_button1.label.set_fontsize(7)
-    right_button1.on_clicked(__test)
+    right_button1.on_clicked(__go_right)
 
     right_button_pos2 = [pos[0] + 0.125 - options_height + 2 * but_width,
                         left_button_pos1[1],
@@ -906,8 +960,8 @@ def __stage_gui(fig2):
     right_button_axes2 = fig2.add_axes(right_button_pos2)
     right_button2 = Button(right_button_axes2, '++x')
     right_button2.label.set_fontsize(7)
-    left_button2.on_clicked(__test)
-	
+    right_button2.on_clicked(__go_right_plus)
+
     # current position
     x_pos_but_pos = [up_button_pos1[0] + 6 * padding,
                        down_button_pos2[1] - 2 * padding - options_height * 2,
@@ -917,8 +971,8 @@ def __stage_gui(fig2):
     x_pos_but = TextBox(x_pos_but_axes, 'current x pos.')
     x_pos_but.label.set_fontsize(7)
     x_pos_but.set_val(1)
-    x_pos_but.on_submit(__test)	
-	
+    x_pos_but.on_submit(__update_pos_x)
+
     # current position
     y_pos_but_pos = [up_button_pos1[0] + 6 * padding,
                        x_pos_but_pos[1] - 2 * padding - options_height * 2,
@@ -928,7 +982,7 @@ def __stage_gui(fig2):
     y_pos_but = TextBox(y_pos_but_axes, 'current y pos.')
     y_pos_but.label.set_fontsize(7)
     y_pos_but.set_val(1)
-    y_pos_but.on_submit(__test)
+    y_pos_but.on_submit(__update_pos_y)
 
     # Set x-y step size
     xy_step_text_pos1 = [up_button_pos1[0] + 6 * padding,
@@ -938,9 +992,9 @@ def __stage_gui(fig2):
     xy_step_text_axes1 = fig2.add_axes(xy_step_text_pos1)
     xy_step_text1 = TextBox(xy_step_text_axes1, '+ xy step size (um)')
     xy_step_text1.label.set_fontsize(7)
-    xy_step_text1.set_val(1)
-    xy_step_text1.on_submit(__test)
-	
+    xy_step_text1.set_val(__XY_STEP)
+    xy_step_text1.on_submit(__xy_step)
+
     # Set x-y step size
     xy_step_text_pos2 = [up_button_pos1[0] + 6 * padding,
                         xy_step_text_pos1[1] - 2 * padding - options_height * 2,
@@ -949,9 +1003,9 @@ def __stage_gui(fig2):
     xy_step_text_axes2 = fig2.add_axes(xy_step_text_pos2)
     xy_step_text2 = TextBox(xy_step_text_axes2, '++ xy step size (um)')
     xy_step_text2.label.set_fontsize(7)
-    xy_step_text2.set_val(1)
-    xy_step_text2.on_submit(__test)
-	
+    xy_step_text2.set_val(__XY_STEP_PLUS)
+    xy_step_text2.on_submit(__xy_step_plus)
+
     z_up_button_pos1 = [up_button_pos1[0] + 8 * but_width,
                        up_button_pos1[1],
                        but_width,
@@ -959,7 +1013,7 @@ def __stage_gui(fig2):
     z_up_button_axes1 = fig2.add_axes(z_up_button_pos1)
     z_up_button1 = Button(z_up_button_axes1, '++z')
     z_up_button1.label.set_fontsize(7)
-    z_up_button1.on_clicked(__test)
+    z_up_button1.on_clicked(__go_defocus_up_plus)
 
     z_up_button_pos2 = [z_up_button_pos1[0],
                        up_button_pos2[1],
@@ -968,7 +1022,7 @@ def __stage_gui(fig2):
     z_up_button_axes2 = fig2.add_axes(z_up_button_pos2)
     z_up_button2 = Button(z_up_button_axes2, '+ z')
     z_up_button2.label.set_fontsize(7)
-    z_up_button2.on_clicked(__test)
+    z_up_button2.on_clicked(__go_defocus_up)
 
     z_down_button_pos1 = [z_up_button_pos2[0],
                          z_up_button_pos2[1] - 2 * but_height,
@@ -977,17 +1031,17 @@ def __stage_gui(fig2):
     z_down_button_axes1 = fig2.add_axes(z_down_button_pos1)
     z_down_button1 = Button(z_down_button_axes1, '- z')
     z_down_button1.label.set_fontsize(7)
-    z_down_button1.on_clicked(__test)
+    z_down_button1.on_clicked(__go_defocus_down)
 
     z_down_button_pos2 = [z_up_button_pos2[0],
                          z_down_button_pos1[1] - but_height,
                          but_width,
                          but_height]
     z_down_button_axes2 = fig2.add_axes(z_down_button_pos2)
-    z_down_button2 = Button(z_down_button_axes2, '- - z')
+    z_down_button2 = Button(z_down_button_axes2, '-- z')
     z_down_button2.label.set_fontsize(7)
-    z_down_button2.on_clicked(__test)
-	
+    z_down_button2.on_clicked(__go_defocus_down_plus)
+
     # current position
     z_pos_but_pos = [z_down_button_pos2[0] + but_width * 2,
                        z_down_button_pos2[1] - 2 * padding - options_height * 2,
@@ -997,7 +1051,7 @@ def __stage_gui(fig2):
     z_pos_but = TextBox(z_pos_but_axes, 'current z pos.')
     z_pos_but.label.set_fontsize(7)
     z_pos_but.set_val(1)
-    z_pos_but.on_submit(__test)
+    z_pos_but.on_submit(__update_pos_z)
 
     # Set z step size
     z_step_text_pos1 = [z_pos_but_pos[0],
@@ -1007,8 +1061,9 @@ def __stage_gui(fig2):
     z_step_text_axes1 = fig2.add_axes(z_step_text_pos1)
     z_step_text1 = TextBox(z_step_text_axes1, '+ z step size (um)')
     z_step_text1.label.set_fontsize(7)
-    z_step_text1.set_val(1)
-    z_step_text1.on_submit(__test)
+    z_step_text1.set_val(__Z_STEP)
+    z_step_text1.on_submit(__z_step)
+
     # Set z step size
     z_step_text_pos2 = [z_pos_but_pos[0],
                        z_step_text_pos1[1] - 2 * padding - options_height * 2,
@@ -1017,9 +1072,9 @@ def __stage_gui(fig2):
     z_step_text_axes2 = fig2.add_axes(z_step_text_pos2)
     z_step_text2 = TextBox(z_step_text_axes2, '++ z step size (um)')
     z_step_text2.label.set_fontsize(7)
-    z_step_text2.set_val(1)
-    z_step_text2.on_submit(__test)
-	
+    z_step_text2.set_val(__Z_STEP_PLUS)
+    z_step_text2.on_submit(__z_step_plus)
+
     # num of steps
     step_num_text_pos = [z_pos_but_pos[0],
                          z_step_text_pos2[1] - 2 * padding - options_height * 2,
@@ -1029,7 +1084,7 @@ def __stage_gui(fig2):
     step_num_text = TextBox(step_num_text_axes, '# of steps (radius)')
     step_num_text.label.set_fontsize(7)
     step_num_text.set_val(1)
-    step_num_text.on_submit(__test)
+    step_num_text.on_submit(__number_defocus)
 
     # z interval
     z_interval_text_pos = [z_pos_but_pos[0],
@@ -1041,7 +1096,7 @@ def __stage_gui(fig2):
     z_interval_text.label.set_fontsize(7)
     z_interval_text.set_val(1)
     z_interval_text.on_submit(__test)
-	
+
 	# time btwn z stacks
     time_btwn_z_text_pos = [z_pos_but_pos[0],
                            z_interval_text_pos[1] - 2 * padding - options_height * 2,
@@ -1050,9 +1105,9 @@ def __stage_gui(fig2):
     time_btwn_z_text_axes = fig2.add_axes(time_btwn_z_text_pos)
     time_btwn_z_text = TextBox(time_btwn_z_text_axes, 'time between z stacks')
     time_btwn_z_text.label.set_fontsize(7)
-    time_btwn_z_text.set_val(1)
-    time_btwn_z_text.on_submit(__test)
-	
+    time_btwn_z_text.set_val(30)
+    time_btwn_z_text.on_submit(__time_int_def)
+
     z_acquire_but_pos = [pos[0] + 3 * padding,
                            time_btwn_z_text_pos[1] - 2 * padding - options_height * 2,
                          0.55,
@@ -1061,9 +1116,9 @@ def __stage_gui(fig2):
     z_acquire_but = Button(z_acquire_but_axes, 'Start defocus acquisition(s)')
     z_acquire_but.label.set_fontsize(7)
     z_acquire_but.on_clicked(__defocus_acquisition)
-	
+
     led_but_width= but_width*2
-	
+
     red_but_pos = [pos[0] + 4 * padding,
                    z_acquire_but_pos[1] - 2 * padding - options_height * 2,
                    led_but_width,
@@ -1099,7 +1154,7 @@ def __stage_gui(fig2):
     blue_but = Button(blue_but_axes, 'B')
     blue_but.label.set_fontsize(7)
     blue_but.on_clicked(__ledb)
-	
+
     off_but_pos = [blue_but_pos[0] + 7* padding + but_width,
                     blue_but_pos[1],
                     led_but_width,
@@ -1143,7 +1198,7 @@ def __spincam_gui():
     # Get figure
     fig = plt.figure(1)
     fig2 = plt.figure(2)
-	
+
     # Set position params
     padding = 0.01
     options_height = 0.02
@@ -1166,8 +1221,8 @@ def __spincam_gui():
                               padding)
     # Set initial values
     # Set callbacks
-    display_dict['find_and_init_button'].on_clicked(__find_and_init_cam)
-
+    display_dict['find_and_init_button'].on_clicked(__test)
+    ''' 
     # Start stream
     start_stream_button_pos = [padding,
                                display_pos[1] - options_height,
@@ -1191,6 +1246,29 @@ def __spincam_gui():
 
     # Set callback
     stop_stream_button.on_clicked(__stop_stream)
+    '''
+    start_stream_button_pos = [padding,
+                               display_pos[1] - options_height,
+                               0.5 - 2 * padding,
+                               options_height]
+    start_stream_button_axes = fig.add_axes(start_stream_button_pos)
+    start_stream_button = Button(start_stream_button_axes, 'Open Preview')
+    start_stream_button.label.set_fontsize(7)
+
+    # Set callback
+    start_stream_button.on_clicked(__open_preview)
+
+    # Stop stream
+    stop_stream_button_pos = [start_stream_button_pos[0] + start_stream_button_pos[2] + 2 * padding,
+                              display_pos[1] - options_height,
+                              0.5 - 2 * padding,
+                              options_height]
+    stop_stream_button_axes = fig.add_axes(stop_stream_button_pos)
+    stop_stream_button = Button(stop_stream_button_axes, 'Plot Histogram')
+    stop_stream_button.label.set_fontsize(7)
+
+    # Set callback
+    stop_stream_button.on_clicked(__plot_hist)
 
     # fps
     fps_pos = [0, start_stream_button_pos[1] - options_height - padding, 1, options_height]
@@ -1255,14 +1333,14 @@ def __spincam_gui():
     save_button = Button(save_button_axes, 'Start Acquisition(no z-scan)')
     save_button.label.set_fontsize(7)
     # Set callback
-    save_button.on_clicked(__acquire_images)
-	
+    save_button.on_clicked(__acquire_no_z)
+
     # Set num images text
     num_images_text_pos = [cam_plot_width - 20 * padding,
                            padding,
                            0.1 - 2 * padding,
                            options_height]
-    save_button.on_clicked(__save_fourcolor)
+    #save_button.on_clicked(__save_fourcolor)
 
     # Set num images text
     avg_images_text_pos = [save_button_pos[0] + save_button_pos[2] + padding + (
@@ -1284,7 +1362,7 @@ def __spincam_gui():
     counter_text = TextBox(counter_axes, 'Counter')
     counter_text.label.set_fontsize(7)
     counter_text.set_val(1)
-	
+
     # Set num images text
     num_images_text_pos = [avg_images_text_pos[0]+avg_images_text_pos[2] + 12 * padding,
                            name_format_pos[1] - options_height - padding,
@@ -1294,10 +1372,10 @@ def __spincam_gui():
     num_images_text = TextBox(num_images_text_axes, '# to Acquire')
     num_images_text.label.set_fontsize(7)
     num_images_text.set_val(1)
-	
-	
+
+
     stage_dict=__stage_gui(fig2)
-	
+
 
     return {'fig': fig,
             'display_dict': display_dict,
@@ -1326,33 +1404,32 @@ def __stream_images():
         image_dict = spincam.get_image()
 
         # Make sure images are complete
-        #if 'data' in image_dict:
-            # Plot image and histogram
-            #__IMSHOW_DICT, __HIST_DICT = __plot_image_and_hist(image_dict['data'],
-            #                                                   2 ** image_dict['bitsperpixel'] - 1,
-            #                                                   __GUI_DICT['display_dict'][
-            #                                                       'image_axes'],
-            #                                                   __IMSHOW_DICT,
-            #                                                   __GUI_DICT['display_dict'][
-            #                                                       'hist_axes'],
-            #                                                   __HIST_DICT)
-
+        """if 'data' in image_dict:
+             Plot image and histogram
+            __IMSHOW_DICT, __HIST_DICT = __plot_image_and_hist(image_dict['data'],
+                                                               2 ** image_dict['bitsperpixel'] - 1,
+                                                               __GUI_DICT['display_dict'][
+                                                                   'image_axes'],
+                                                               __IMSHOW_DICT,
+                                                               __GUI_DICT['display_dict'][
+                                                                   'hist_axes'],
+                                                               __HIST_DICT)
+"""
     except:  # pylint: disable=bare-except
-        print("can't get image")
-    #    if __STREAM:
+        if __STREAM:
             # Only re-raise error if stream is still enabled
-    #        raise
+            raise
 
 
 def main():
-    global __QUEUE
+    #global __QUEUE
     global __STREAM
     global __IMSHOW_DICT, __IMSHOW_SECONDARY_DICT
     global __HIST_DICT, __HIST_SECONDARY_DICT
     global __GUI_DICT
 
     # check microscope objective
-    while(stage.__check_objective()==False):
+    while(stage.__check_objective() == False):
         print("------ Please unmount the objective ------ ")
 
     # initialize stages
@@ -1361,17 +1438,19 @@ def main():
     # Set GUI
     __GUI_DICT = __spincam_gui()
 
+    # initialize the camera
+    __find_and_init_cam()
     # Update plot while figure exists
     while plt.fignum_exists(__GUI_DICT['fig'].number):  # pylint: disable=unsubscriptable-object
         try:
             # Handle streams
-            if __STREAM:
-                __stream_images()
+            #if __STREAM:
+            #    __stream_images()
 
             # Handle queue
-            while not __QUEUE.empty():
-                func, args, kwargs = __QUEUE.get()
-                func(*args, **kwargs)
+            #while not __QUEUE.empty():
+            #    func, args, kwargs = __QUEUE.get()
+            #    func(*args, **kwargs)
 
             # Update plot
             plt.pause(sys.float_info.min)
@@ -1381,7 +1460,7 @@ def main():
                 raise
 
     # Clean up
-    __QUEUE = queue.Queue()
+    #__QUEUE = queue.Queue()
     __STREAM = False
     __IMSHOW_DICT = {'imshow': None, 'imshow_size': None}
     __HIST_DICT = {'bar': None}
