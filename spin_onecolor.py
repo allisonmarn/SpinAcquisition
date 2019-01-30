@@ -34,6 +34,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
+__COM_PORT=4
 
 
 def __find_and_init_cam(_=None):
@@ -57,7 +58,7 @@ def __find_and_init_cam(_=None):
 	spincam.disable_auto_frame()
 	__init_gain(0)
 	spincam.set_video_mode('7')
-	ledserial.connect()
+	ledserial.connect(__COM_PORT)
 	
 def __choose_directory(_=None):
     dir = filedialog.askdirectory()
@@ -353,7 +354,7 @@ def __exposure_text(_=None):
     if not exposure_text:
         return
 
-    exposure = float(expcosure_text)
+    exposure = float(exposure_text)
 
     # Update slider to match text
     __GUI_DICT['exposure_slider'].eventson = False
@@ -556,8 +557,8 @@ def __save_images(save_type):
     counter = 0
     file_number = 1
 	
-    if (time_btwn_frames != 0):
-        num_to_avg = int( frmrate * time_btwn_frames) 
+    #if (time_btwn_frames != 0):
+        #num_to_avg = int( frmrate * time_btwn_frames) 
 	
 	
     img_name = name_format.replace('{date}',str(datetime.date.today()))
@@ -592,6 +593,7 @@ def __save_images(save_type):
             if (counter == 10):
                 img_name= img_main + '_' + str(file_number) + '.tiff'
                 file_number = file_number + 1
+                counter=0
     print('Finished Acquiring ' + img_name)
 #def onclick(event):
 #    print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
@@ -605,6 +607,10 @@ def __save_fourcolor(save_type):
     if not __STREAM:
         raise RuntimeError('Stream has not been started yet! Please start it first.')
 
+    #set LED number	and array
+    lednumber=4
+    color=['r','y','g','b']	
+	
     # Get name format, counter, and number of images
     name_format = __GUI_DICT['name_format_text'].text
     counter = int(__GUI_DICT['counter_text'].text)
@@ -615,6 +621,7 @@ def __save_fourcolor(save_type):
     directory = __GUI_DICT['directory_text'].text
     counter = 0
     file_number = 1
+
 	
     if (time_btwn_frames != 0):
         num_to_avg = int( frmrate * time_btwn_frames) 
@@ -626,12 +633,14 @@ def __save_fourcolor(save_type):
 	    directory = directory + '\\'
 	
     img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
-    img_name = img_main + '.tiff'
+	
+	
+    img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
     print('Experiment start: ' + str(datetime.datetime.now()))
 	
-	color=['r','y','g','b']
     for i in range(num_images):
-		ledserial.send(color[i%4])
+        ledserial.send(color[i%lednumber])
+        img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
         image_dict = spincam.get_image_and_avg(num_to_avg)
         
         # Make sure images are complete
@@ -640,9 +649,9 @@ def __save_fourcolor(save_type):
             #print('Acquired: ' + img_name)
             ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
             counter=counter+1
-            if (counter == 10):
-                img_name= img_main + '_' + str(file_number) + '.tiff'
+            if (counter/lednumber == 10 ):
                 file_number = file_number + 1
+                counter=0
     print('Finished Acquiring ' + img_name)
 
 	
