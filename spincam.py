@@ -131,7 +131,7 @@ def __get_image_and_avg(cam, num_to_avg):
                     arr = img_array / num_to_avg
                     print('Frame: ' + str(datetime.now()))
                 else:
-                    img_array = np.array(image.GetNDArray(), dtype=np.float) + img_array
+                    img_array = np.array(image.GetNDArray(), dtype=np.float)
                     arr = arr + img_array / num_to_avg
                     print('Frame: ' + str(datetime.now()))
             image.Release()
