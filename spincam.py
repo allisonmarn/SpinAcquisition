@@ -68,27 +68,26 @@ def __cleanup_cam():
     with suppress(Exception):
         end_acquisition()
     with suppress(Exception):
-        deinit()
+        __CAM.DeInit()
 
     # Clear camera reference
     __CAM = None
+	
 
 def __find_cam(cam_serial):
     #returns camera object 
 
     # Retrieve cameras from the system
     cam_list = __SYSTEM.GetCameras()
-
-    # Find camera matching serial
-    cam_found = None
 	
-    for i, cam in enumerate(cam_list):
-	    cam_found = cam
-    # Check to see if match was found
-    if cam_found is None:
-        print('Could not find camera with serial: "' + str(cam_serial) + '".')
-        return False
-		
+    num_cameras = cam_list.GetSize()
+	
+    if num_cameras == 1:
+        cam_found = cam_list[0]
+    else:
+        print("More than one camera connected")
+	
+	
     return cam_found
 	
 def __get_image(cam):
@@ -234,7 +233,7 @@ def end_acquisition():
     __get_and_validate_streaming_cam().EndAcquisition()
 
 def find_cam(cam_serial):
-    # Finds Camera
+    # Finds Camerade
     global __CAM 
 
     cam = __find_cam(cam_serial)
