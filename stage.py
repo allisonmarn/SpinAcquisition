@@ -35,7 +35,7 @@ def __initialize_stages():
     __cntrl_y.move_home()
     time.sleep(1)    # pause 5 to homing
     __cntrl_z.move_home()
-    time.sleep(60)    # pause 5 to homing
+    time.sleep(20)    # pause 5 to homing
     print('Homing is finished...')
 
     # go to home positions
@@ -69,7 +69,7 @@ def __go_z(position):
     __cntrl_z.move_by(position*1e-3)
 
 def __check_objective():
-    var = input("Is objective mounted (Y/N): ")
+    var = input("Is objective unmounted (Y/N): ")
     if (var == 'Y'):
         return True
     else:
