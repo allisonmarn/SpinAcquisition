@@ -34,7 +34,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
-__COM_PORT=4
+__COM_PORT=7
 
 
 def __find_and_init_cam(_=None):
@@ -568,6 +568,7 @@ def __save_images(save_type):
 	
     img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
     img_name = img_main + '.tiff'
+    img_csv = img_main + '.csv'
     print('Experiment start: ' + str(datetime.datetime.now()))
 	
     for i in range(num_images):
@@ -578,8 +579,12 @@ def __save_images(save_type):
         if 'data' in image_dict:
         # Save image
             #print('Acquired: ' + img_name)
-            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+            ski.imsave(img_name, image_dict['data'].astype(np.float16), compress=0, append=True)
             counter=counter+1
+            ledserial.send('s')
+            with open(img_csv,"a+") as p:
+                p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
+                p.close()
             # Plot image and histogram
             #__IMSHOW_DICT, __HIST_DICT = __plot_image_and_hist(image_dict['data'],
             #                                                                   2**image_dict['bitsperpixel']-1,
@@ -744,7 +749,7 @@ def __spincam_gui():
     fps_pos = [0, start_stream_button_pos[1]-options_height-padding, 1, options_height]
     (fps_slider, fps_text) = __slider_with_text(fig,
                                                                   fps_pos,
-                                                                  'FPS',
+                                                                  'Exposure 1',
                                                                   __FPS_MIN,
                                                                   __FPS_MAX,
                                                                   __FPS_MIN,
@@ -757,7 +762,7 @@ def __spincam_gui():
     exposure_pos = [0, fps_pos[1]-options_height-padding, 1, options_height]
     (exposure_slider, exposure_text) = __slider_with_text(fig,
                                                           exposure_pos,
-                                                          'Exposure',
+                                                          'Exposure 2',
                                                           __EXPOSURE_MIN,
                                                           __EXPOSURE_MAX,
                                                           __EXPOSURE_MIN,

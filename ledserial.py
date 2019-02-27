@@ -21,12 +21,20 @@ def __connect(portno):
 	
 def __close():
 	__SERIAL.close()
+	
+
+def __read_power():
+	return __SERIAL.readline()
 
 
 def connect(portno):
 	__connect(portno)
 	if __SERIAL.is_open:
 		print('LEDs connected')
+
+		
+def read_power():
+	return __read_power()
 
 def close():
 	return __close()
