@@ -27,6 +27,8 @@ __GAIN_MIN = 0
 __GAIN_MAX = 47          # Units are dB
 __EXPOSURE_MIN = 0.006       # microseconds
 __EXPOSURE_MAX = 2999999   # microseconds seconds
+__EXPOSURE1 = None
+__EXPOSURE2 = None
 
 # GUI params
 __QUEUE = queue.Queue()
@@ -34,8 +36,7 @@ __STREAM = False
 __IMSHOW_DICT = {'imshow': None, 'imshow_size': None, 'max_val': None}
 __HIST_DICT = {'bar': None, 'max_val': None}
 __GUI_DICT = None
-__PD = 0
-__COM_PORT = 7
+__COM_PORT=7
 
 
 def __find_and_init_cam(_=None):
@@ -543,13 +544,13 @@ def __stage_controls(fig, pos, options_height, padding):
 def __save_images(save_type):
    
     global __IMSHOW_DICT 
-    global __PD 
     global __HIST_DICT
     if not __STREAM:
         raise RuntimeError('Stream has not been started yet! Please start it first.')
 
     # Get name format, counter, and number of images
     name_format = __GUI_DICT['name_format_text'].text
+    counter = int(__GUI_DICT['counter_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
     time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
@@ -579,28 +580,93 @@ def __save_images(save_type):
         # Make sure images are complete
         if 'data' in image_dict:
         # Save image
-            try:
             #print('Acquired: ' + img_name)
-                ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
-                counter=counter+1
+            ski.imsave(img_name, image_dict['data'].astype(np.float16), compress=0, append=True)
+            counter=counter+1
             #ledserial.send('s')
-                if ( __PD == 1):
-                    with open(img_csv,"a+") as p:
-                        p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
-                        p.close()
-                if (counter == 10):
-                    img_name= img_main + '_' + str(file_number) + '.tiff'
-                    file_number = file_number + 1
-                    counter=0
-            except:
-                print("ALERT: error saving")
-
+            with open(img_csv,"a+") as p:
+                #p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
+                p.close()
+            # Plot image and histogram
+            #__IMSHOW_DICT, __HIST_DICT = __plot_image_and_hist(image_dict['data'],
+            #                                                                   2**image_dict['bitsperpixel']-1,
+            #                                                                   __GUI_DICT['display_dict']['image_axes'],
+            #                                                                   __IMSHOW_DICT,
+            #                                                                   __GUI_DICT['display_dict']['hist_axes'],
+            #                                                                   __HIST_DICT)
+	        # Update counter
+            #__GUI_DICT['counter_text'].set_val(str(counter+num_images))
+            #plt.pause(sys.float_info.min)
+            if (counter == 10):
+                img_name= img_main + '_' + str(file_number) + '.tiff'
+                file_number = file_number + 1
+                counter=0
     print('Finished Acquiring ' + img_name)
 #def onclick(event):
 #    print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
 #          ('double' if event.dblclick else 'single', event.button,
 #           event.x, event.y, event.xdata, event.ydata))
 
+def __save_twocolor(save_type):
+   
+    global __IMSHOW_DICT 
+    global __HIST_DICT
+    if not __STREAM:
+        raise RuntimeError('Stream has not been started yet! Please start it first.')
+
+    #set LED number	and array
+    lednumber=4
+    color=['r','y','g','b']	
+	
+    # Get name format, counter, and number of images
+    name_format = __GUI_DICT['name_format_text'].text
+    counter = int(__GUI_DICT['counter_text'].text)
+    num_images = int(__GUI_DICT['num_images_text'].text)
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    frmrate=int(spincam.get_frame_rate())
+    directory = __GUI_DICT['directory_text'].text
+    counter = 0
+    file_number = 1
+
+	
+    if (time_btwn_frames != 0):
+        num_to_avg = int( frmrate * time_btwn_frames) 
+	
+	
+    img_name = name_format.replace('{date}',str(datetime.date.today()))
+	
+    if directory:
+	    directory = directory + '\\'
+	
+    img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
+	
+	
+    img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
+    print('Experiment start: ' + str(datetime.datetime.now()))
+	
+    for i in range(num_images):
+		#change led color
+        ledserial.send(color[i%lednumber])
+		
+		#set exposure
+		
+		#set image name
+        img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
+        image_dict = spincam.get_image_and_avg(num_to_avg)
+        
+        # Make sure images are complete
+        if 'data' in image_dict:
+        # Save image
+            #print('Acquired: ' + img_name)
+            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+            counter=counter+1
+            if (counter/lednumber == 10 ):
+                file_number = file_number + 1
+                counter=0
+    print('Finished Acquiring ' + img_name)
+
+	
 def __save_fourcolor(save_type):
    
     global __IMSHOW_DICT 
@@ -614,6 +680,7 @@ def __save_fourcolor(save_type):
 	
     # Get name format, counter, and number of images
     name_format = __GUI_DICT['name_format_text'].text
+    counter = int(__GUI_DICT['counter_text'].text)
     num_images = int(__GUI_DICT['num_images_text'].text)
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
     time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
@@ -647,7 +714,7 @@ def __save_fourcolor(save_type):
         if 'data' in image_dict:
         # Save image
             #print('Acquired: ' + img_name)
-            ski.imsave(img_name, image_dict['data'].astype(np.float16), compress=0, append=True)
+            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
             counter=counter+1
             if (counter/lednumber == 10 ):
                 file_number = file_number + 1
@@ -744,7 +811,7 @@ def __spincam_gui():
     fps_pos = [0, start_stream_button_pos[1]-options_height-padding, 1, options_height]
     (fps_slider, fps_text) = __slider_with_text(fig,
                                                                   fps_pos,
-                                                                  'FPS',
+                                                                  'Exposure 1',
                                                                   __FPS_MIN,
                                                                   __FPS_MAX,
                                                                   __FPS_MIN,
@@ -757,7 +824,7 @@ def __spincam_gui():
     exposure_pos = [0, fps_pos[1]-options_height-padding, 1, options_height]
     (exposure_slider, exposure_text) = __slider_with_text(fig,
                                                           exposure_pos,
-                                                          'Exposure',
+                                                          'Exposure 2',
                                                           __EXPOSURE_MIN,
                                                           __EXPOSURE_MAX,
                                                           __EXPOSURE_MIN,
@@ -793,6 +860,17 @@ def __spincam_gui():
     name_format_text.label.set_fontsize(7)
     name_format_text.set_val('test_{date}')
     
+    # Set counter
+    counter_pos = [name_format_pos[0]+name_format_pos[2]+padding+(0.5-2*padding)*0.1875+2*padding,
+                   directory_pos[1]-options_height-padding,
+                   (0.5-2*padding)*0.8125-padding,
+                   options_height]
+    counter_axes = fig.add_axes(counter_pos)
+    counter_text = TextBox(counter_axes, 'Counter')
+    counter_text.label.set_fontsize(7)
+    counter_text.set_val(1)
+	
+
 	    # Set save primary button
     save_button_pos = [padding,
                                name_format_pos[1]-options_height-padding,
@@ -815,10 +893,10 @@ def __spincam_gui():
     num_images_text.set_val(1)
 	
 	# Set num images text
-    time_images_text_pos = [0.75,
-                   directory_pos[1]-options_height-padding,
-                   0.125,
-                   options_height]
+    time_images_text_pos = [cam_plot_width+6*padding,
+                       padding,
+                       0.2-2*padding,
+                       options_height]
     time_images_text_axes = fig.add_axes(time_images_text_pos)
     time_images_text = TextBox(time_images_text_axes, 'Time between frames (s)')
     time_images_text.label.set_fontsize(7)
@@ -841,6 +919,7 @@ def __spincam_gui():
             'stop_stream_button': stop_stream_button,
 			'save_button': save_button,
 			'name_format_text': name_format_text,
+			'counter_text': counter_text,
 			'num_images_text': num_images_text,
 			'avg_images_text': avg_images_text,
 			'fps_slider': fps_slider,
