@@ -582,9 +582,10 @@ def __save_images(save_type):
             try:
             #print('Acquired: ' + img_name)
                 ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+                print('Finished Acquiring ' + img_name)
                 counter=counter+1
-            #ledserial.send('s')
                 if ( __PD == 1):
+                    ledserial.send('s')
                     with open(img_csv,"a+") as p:
                         p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
                         p.close()
@@ -595,7 +596,6 @@ def __save_images(save_type):
             except:
                 print("ALERT: error saving")
 
-    print('Finished Acquiring ' + img_name)
 #def onclick(event):
 #    print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
 #          ('double' if event.dblclick else 'single', event.button,
@@ -647,7 +647,7 @@ def __save_fourcolor(save_type):
         if 'data' in image_dict:
         # Save image
             #print('Acquired: ' + img_name)
-            ski.imsave(img_name, image_dict['data'].astype(np.float16), compress=0, append=True)
+            ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
             counter=counter+1
             if (counter/lednumber == 10 ):
                 file_number = file_number + 1
