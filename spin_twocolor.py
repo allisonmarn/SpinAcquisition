@@ -607,12 +607,16 @@ def __save_twocolor(save_type):
    
     global __IMSHOW_DICT 
     global __HIST_DICT
+	global __EXPOSURE1
+	global __EXPOSURE2
+
     if not __STREAM:
         raise RuntimeError('Stream has not been started yet! Please start it first.')
 
     #set LED number	and array
-    lednumber=4
+    lednumber=2
     color=['r','y','g','b']	
+	exp=[__EXPOSURE1,__EXPOSURE2]
 	
     # Get name format, counter, and number of images
     name_format = __GUI_DICT['name_format_text'].text
@@ -640,6 +644,9 @@ def __save_twocolor(save_type):
 	
     for i in range(num_images):
         ledserial.send(color[i%lednumber])
+		
+        spincam.set_exposure(exp[i%lednumber])
+		
         img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
         image_dict = spincam.get_image_and_avg(num_to_avg)
 
