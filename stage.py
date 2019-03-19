@@ -69,7 +69,7 @@ def __go_z(position):
     __cntrl_z.move_by(position*1e-3)
 
 def __check_objective():
-    var = input("Is objective mounted (Y/N): ")
+    var = input("Is objective unmounted (Y/N): ")
     if (var == 'Y'):
         return True
     else:

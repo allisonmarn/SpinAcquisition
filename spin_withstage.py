@@ -49,7 +49,7 @@ __XY_STEP_PLUS = 100
 __X_POS = 0
 __Y_POS = 0
 __Z_POS = 0
-__COM_PORT = 5
+__COM_PORT = 7
 
 
 def __find_and_init_cam(_=None):
@@ -72,6 +72,7 @@ def __find_and_init_cam(_=None):
     spincam.disable_auto_frame()
     __init_gain(0)
     spincam.set_video_mode('7')
+    spincam.set_pixel_format()
     ledserial.connect(__COM_PORT)
 
 
@@ -108,6 +109,7 @@ def __find_and_init_cam(_=None):
     spincam.disable_auto_frame()
     __init_gain(0)
     spincam.set_video_mode('7')
+    spincam.set_pixel_format()
     ledserial.connect(__COM_PORT)
 
 
@@ -189,7 +191,8 @@ def __plot_image(image, max_val, image_axes, imshow_dict):
 
 
 def __plot_hist(_=None):
-    # plots histogram
+    global __HIST_DICT
+	# plots histogram
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
     # grab an image
     if (__STREAM):
@@ -221,7 +224,7 @@ def __plot_hist(_=None):
         # Reset height
         for i, bar in enumerate(hist_dict['bar']):  # pylint: disable=blacklisted-name
             bar.set_height(hist[i])
-
+    __HIST_DICT = hist_dict
     return hist_dict
 
 
@@ -766,13 +769,13 @@ def __acquire_no_z(_=None):
     global __GUI_DICT
 
     num_to_avg = int(__GUI_DICT['avg_images_text'].text)
-    img_name=__fix_name()
+    img_name = __fix_name()
     image_dict = spincam.get_image_and_avg(num_to_avg)
     print('Starting save ' + img_name)
     # Make sure images are complete
     if 'data' in image_dict:
-        data=image_dict['data'].astype(np.uint16)
-        __save_images(img_name, data,0,0)
+        data = image_dict['data'].astype(np.uint16)
+        __save_images(img_name, data, 0 ,0)
         print('Finished Acquiring ' + img_name)
     __stop_stream()
 
@@ -825,7 +828,7 @@ def __acquire_images(_=None):
 #           event.x, event.y, event.xdata, event.ydata))
 def __save_images(file_name, data, time, z):
     file_name = file_name + '_time_%06d' % time + '_z_%03d' % z + '.tiff'
-    ski.imsave(file_name, data, compress=0)
+    ski.imsave(file_name, data.astype(np.uint16), compress=0)
 
 
 def __save_fourcolor(save_type):
@@ -1195,6 +1198,7 @@ def __stage_gui(fig2):
             'off_but':off_but}
 
 def __spincam_gui():
+
     # Get figure
     fig = plt.figure(1)
     fig2 = plt.figure(2)

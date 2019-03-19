@@ -122,7 +122,7 @@ def __get_image_and_avg(cam, num_to_avg):
 
             # Initialize image dict
             image_dict = {}
-
+            arr = 0
             # Ensure image is complete
             if not image.IsIncomplete():
                 # Get data/metadata
@@ -179,6 +179,15 @@ def __validate_cam_streaming(cam, cam_str):
 def __roi():
     return 0
 
+def set_pixel_format():
+    global __CAM
+    # Sets pixel format of the camera
+    if __CAM.PixelFormat.GetAccessMode() != PySpin.RW:
+        print('Unable to set pixel format. Aborting...')
+        return False
+
+    __CAM.PixelFormat.SetValue(PySpin.PixelFormat_Mono16)
+    print('Pixel format is set %s...' % __CAM.PixelFormat.GetCurrentEntry().GetSymbolic())
 
 def set_video_mode(mode):
     global __CAM
