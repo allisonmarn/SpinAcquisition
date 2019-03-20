@@ -137,7 +137,9 @@ def __get_image_and_avg(cam,num_to_avg):
 	except PySpin.SpinnakerException as ex:
 		print('Error: %s' % ex)
 		return False
-
+	except:
+		print('Unknown Error')
+		return False
 	return image_dict
 	
 def __init_cam(cam):
@@ -187,6 +189,25 @@ def set_video_mode(mode):
     node_video_mode.SetIntValue(video_mode_7)
     print('Video Mode set to Mode '+ mode)
 
+def set_pixel_format(format)
+    global __CAM
+    try:
+        nodemap = __CAM.GetNodeMap()
+        node_pixel_format = PySpin.CEnumerationPtr(nodemap.GetNode('PixelFormat'))
+        if PySpin.IsAvailable(node_pixel_format) and PySpin.IsWritable(node_pixel_format):
+
+            # Retrieve the desired entry node from the enumeration node
+            node_pixel_format_mono16 = PySpin.CEnumEntryPtr(node_pixel_format.GetEntryByName('Mono16'))
+            if PySpin.IsAvailable(node_pixel_format_mono16) and PySpin.IsReadable(node_pixel_format_mono16):
+
+                # Retrieve the integer value from the entry node
+                pixel_format_mono16 = node_pixel_format_mono16.GetValue()
+
+                # Set integer as new value for enumeration node
+                node_pixel_format.SetIntValue(pixel_format_mono16)
+	except:
+        print('Cannot set pixel format')
+	
 def __get_and_validate_init_cam():
     # Validates initialization and returns it
 

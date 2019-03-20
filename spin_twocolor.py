@@ -640,33 +640,132 @@ def __save_twocolor(save_type):
     img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
     print('Experiment start: ' + str(datetime.datetime.now()))
 	
+	img_name0=img_name_array[0]+str(file_number)+'.tiff'
+    img_name1 =img_name_array[1]+str(file_number)+'.tiff'
 	# set exposure
 	
     for i in range(num_images):
-        ledserial.send(color[i%lednumber])
+        for k in range(num_to_avg):
+
+				#blue
+				
+                ledserial.send(color[0])
 		
-        spincam.set_exposure(exp[i%lednumber])
+                spincam.set_exposure(exp[0])
 		
-        img_name=img_name_array[i%lednumber]+str(file_number)+'.tiff'
-        image_dict = spincam.get_image_and_avg(num_to_avg)
+          
+                image_raw0 = spincam.get_image()
+                if k ==0:
+				    img_arr0= np.array(image_raw0['data'],dtype=np.float)
+				    arr0 = img_arr0/num_to_avg
+                else:
+				    img_arr0= np.array(image_raw0['data'],dtype=np.float)
+					arr0=arr0+img_array/num_to_avg
+				
+				#red
+				
+                ledserial.send(color[1])
+		
+                spincam.set_exposure(exp[1])
+		
+           
+                image_raw1 = spincam.get_image()
+				
+                if k ==0:
+				    img_arr1= np.array(image_raw1['data'],dtype=np.float)
+				    arr1 = img_arr1/num_to_avg
+                else:
+				    img_arr1= np.array(image_raw1['data'],dtype=np.float)
+					arr1=arr1+img_array/num_to_avg
+
+            image_dict0['data']= arr0
+            image_dict1['data']= arr1
+        # Make sure images are complete
+            if 'data' in image_dict0:
+        # Save image
+                try:
+                    ski.imsave(img_name, image_dict0['data'].astype(np.uint16), compress=0, append=True)
+                    ski.imsave(img_name, image_dict1['data'].astype(np.uint16), compress=0, append=True)
+                    print('Finished Acquiring ' + img_name)
+                    counter=counter+1
+                    if ( __PD == 1):
+                         ledserial.send('s')
+                        with open(img_csv,"a+") as p:
+                            p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
+                            p.close()
+                    if (counter/lednumber == 10 ):
+                        file_number = file_number + 1
+                        img_name0= img_name_array[0] + '_' + str(file_number) + '.tiff'
+                        img_name1= img_name_array[1]+ '_' + str(file_number) + '.tiff'
+                        counter=0
+                except:
+                    print("ALERT: error saving")
+				
+def __save_twocolor_sequential(save_type):
+   
+    global __IMSHOW_DICT 
+    global __HIST_DICT
+	global __EXPOSURE1
+	global __EXPOSURE2
+
+    if not __STREAM:
+        raise RuntimeError('Stream has not been started yet! Please start it first.')
+
+    #set LED number	and array
+    lednumber=2
+    color=['r','y','g','b']	
+	exp=[__EXPOSURE1,__EXPOSURE2]
+	
+    # Get name format, counter, and number of images
+    name_format = __GUI_DICT['name_format_text'].text
+    num_images = int(__GUI_DICT['num_images_text'].text)
+    num_to_avg = int(__GUI_DICT['avg_images_text'].text)
+    time_btwn_frames = int(__GUI_DICT['time_images_text'].text)
+    frmrate=int(spincam.get_frame_rate())
+    directory = __GUI_DICT['directory_text'].text
+    counter = 0
+    file_number = 1
+
+	
+    img_name = name_format.replace('{date}',str(datetime.date.today()))
+	
+    if directory:
+	    directory = directory + '\\'
+	
+    img_main = directory + img_name.replace(' ', '_').replace('.', '_').replace(':', '')
+	
+	
+    img_name_array = [img_main + "_" + color[0]+"_",img_main + "_" + color[1]+"_",img_main + "_" + color[2]+"_",img_main + "_" + color[3]+"_"]
+    print('Experiment start: ' + str(datetime.datetime.now()))
+	
+	# set exposure
+	
+    for i in range(num_images):
+	    for j in range(lednumber)
+            ledserial.send(color[j%lednumber])
+		
+            spincam.set_exposure(exp[j%lednumber])
+		
+            img_name=img_name_array[j%lednumber]+str(file_number)+'.tiff'
+            image_dict = spincam.get_image_and_avg(num_to_avg)
 
         
         # Make sure images are complete
-        if 'data' in image_dict:
+            if 'data' in image_dict:
         # Save image
-            try:
-                ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
-                print('Finished Acquiring ' + img_name)
-                counter=counter+1
-                if ( __PD == 1):
-                    ledserial.send('s')
-                    with open(img_csv,"a+") as p:
-                        p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
-                        p.close()
-                if (counter/lednumber == 10 ):
-                    file_number = file_number + 1
-                    img_name= img_main + '_' + str(file_number) + '.tiff'
-                    counter=0
+                try:
+                    ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
+                    print('Finished Acquiring ' + img_name)
+                    counter=counter+1
+                    if ( __PD == 1):
+                        ledserial.send('s')
+                        with open(img_csv,"a+") as p:
+                            p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
+                            p.close()
+                    if (counter/lednumber == 10 ):
+                        file_number = file_number + 1
+                        img_name= img_main + '_' + str(file_number) + '.tiff'
+                        counter=0
             except:
                 print("ALERT: error saving")
 	

@@ -581,6 +581,7 @@ def __save_images(save_type):
         # Save image
             try:
             #print('Acquired: ' + img_name)
+                #ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
                 ski.imsave(img_name, image_dict['data'].astype(np.uint16), compress=0, append=True)
                 print('Finished Acquiring ' + img_name)
                 counter=counter+1
@@ -589,10 +590,10 @@ def __save_images(save_type):
                     with open(img_csv,"a+") as p:
                         p.write(str(datetime.datetime.now()).split(" ")[1]+", "+str(ledserial.read_power()).split("'")[1].split("\\")[0]+"\n")
                         p.close()
-                if (counter == 10):
-                    img_name= img_main + '_' + str(file_number) + '.tiff'
-                    file_number = file_number + 1
-                    counter=0
+                #if (counter == 10):
+                #    img_name= img_main + '_' + str(file_number) + '.tiff'
+                #    file_number = file_number + 1
+                #    counter=0
             except:
                 print("ALERT: error saving")
 
