@@ -123,14 +123,14 @@ def __get_image_and_avg(cam,num_to_avg):
 			# Get data/metadata
 				if i == 0:
 					img_array=np.array(image.GetNDArray(),dtype=np.float)
-					arr = img_array/num_to_avg
+					arr = img_array
 					print('Frame: '+str(datetime.now()))
 				else:
 					img_array=np.array(image.GetNDArray(),dtype=np.float)
-					arr=arr+img_array/num_to_avg
+					arr=arr+img_array
 					print('Frame: '+str(datetime.now()))
 			image.Release()
-		image_dict['data'] = arr
+		image_dict['data'] = arr/num_to_avg
 		image_dict['timestamp'] = image.GetTimeStamp()
 		print('Averaged Frame: '+str(datetime.now()))
 		image_dict['bitsperpixel'] = image.GetBitsPerPixel()
